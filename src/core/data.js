@@ -51,6 +51,16 @@ export const ELEMENTAL_REACTIONS = {
   BURNING: { desc: 'Damage over time for 2 turns' }
 };
 
+// ── Fusion Recipes ──
+export const FUSION_COST = { gold: 500, materials: { evo_stone: 1 } };
+export const FUSION_RECIPES = {
+  'fire+grass':   'lava_dragon',
+  'water+thunder':'storm_serpent',
+  'dark+light':   'chaos_soldier',
+  'fire+thunder': 'plasma_beast',
+  'water+grass':  'frost_treant',
+};
+
 // ── Status effects ──
 export const STATUS = {
   poison: { icon:'☠',  color:'#88ff44', desc:'Mất 2HP/lượt', dur:3 },
@@ -144,6 +154,12 @@ export const UDEFS = {
   eye_mouse:    { n:'Eye Mouse',    lv:1, hp:7,  mp:10, atk:3,  def:1, spd:6, e:'👁️',o:'player', elem:'dark',    sk:['teleport','poison_bite'],     desc:'Chuột mắt — Tiến hóa đa nhánh LV10', cls:'MAGE' },
   flower_man:   { n:'Flower Man',   lv:1, hp:9,  mp:12, atk:4,  def:2, spd:3, e:'🌺', o:'player', elem:'grass',   sk:['heal','poison_bite'],         desc:'Hoa quỷ — Tiến hóa đa nhánh LV10', cls:'SUPPORT' },
   devil_castle: { n:'D.Castle',     lv:1, hp:12, mp:8,  atk:3,  def:6, spd:1, e:'🏯', o:'player', elem:'dark',    sk:['barrier','ice_blast'],        desc:'Lâu đài quỷ — Tiến hóa đa nhánh LV10', cls:'TANK' },
+  // V6.0 Fusion Hybrids
+  lava_dragon:   { n:'Lava Dragon',   lv:10, hp:35, mp:15, atk:16, def:8, spd:3, e:'🐲', o:'player', elem:'fire',    sk:['flame_breath','stomp'],    desc:'Rồng nham thạch sinh ra từ lửa và đất', cls:'TANK' },
+  storm_serpent: { n:'Storm Serpent', lv:10, hp:28, mp:20, atk:14, def:6, spd:5, e:'🐉', o:'player', elem:'thunder', sk:['thunder','ice_blast'],   desc:'Mãng xà bão tố làm chủ sấm sét', cls:'ASSASSIN' },
+  chaos_soldier: { n:'Chaos Soldier', lv:10, hp:32, mp:18, atk:18, def:9, spd:4, e:'🛡️',o:'player', elem:'dark',    sk:['ulti_dark','barrier'],     desc:'Chiến binh hỗn mang hội tụ sáng tối', cls:'TANK' },
+  plasma_beast:  { n:'Plasma Beast',  lv:10, hp:30, mp:16, atk:15, def:7, spd:6, e:'🐆',o:'player', elem:'thunder', sk:['thunder_wave','teleport'],  desc:'Mãnh thú plasma tốc độ cực nhanh', cls:'ASSASSIN' },
+  frost_treant:  { n:'Frost Treant',  lv:10, hp:40, mp:12, atk:12, def:10,spd:2, e:'🌲',o:'player', elem:'water',   sk:['vine_trap','ice_blast'],   desc:'Cổ thụ băng giá phòng thủ vĩnh cửu', cls:'SUPPORT' },
 };
 
 // ── Gacha pool ──
@@ -190,7 +206,7 @@ export const DEFAULT_PLAYER = {
   inventory:{ hp_potion:2, mp_potion:2, evo_stone:1, food_basic:3 },
   collection:['trigan','great_bar','eye_mouse','flower_man','devil_castle'],
   roster:['trigan','great_bar','eye_mouse','flower_man','devil_castle'],
-  affinity:{}, fatigue:{}, monsterLevels:{},
+  affinity:{}, fatigue:{}, monsterLevels:{}, traits:{},
   // V5.1 additions
   campaignFloor:1, endlessFloor:0, arenaRating:1000,
 };

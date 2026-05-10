@@ -691,6 +691,43 @@ body{background:var(--dark);font-family:'Rajdhani',sans-serif;color:#ccc;
   0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; }
 }
 
+/* ── Fusion UI ── */
+.fusion-slot {
+  width: 80px; height: 80px;
+  background: rgba(255,255,255,0.05);
+  border: 2px dashed #444;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; position: relative; transition: all 0.2s;
+}
+.fusion-slot:hover { border-color: var(--gold); background: rgba(245,200,66,0.1); }
+.slot-placeholder { font-size: 30px; color: #333; }
+.fusion-monster { display: flex; flex-direction: column; align-items: center; }
+.fusion-monster span { font-size: 32px; }
+.f-lv { font-size: 9px; color: var(--gold); font-family: 'Orbitron', sans-serif; }
+
+.fusion-picker-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+  z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.fusion-picker-content {
+  background: #111; border: 1px solid #333; border-radius: 16px;
+  width: 100%; max-width: 400px; max-height: 80vh;
+  display: flex; flex-direction: column; padding: 20px;
+}
+.fusion-picker-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  overflow-y: auto; margin-top: 15px; padding-right: 5px;
+}
+.fusion-picker-item {
+  background: rgba(255,255,255,0.03); border: 1px solid #222; border-radius: 8px;
+  padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s;
+}
+.fusion-picker-item:hover:not(.locked) { background: rgba(245,200,66,0.1); border-color: var(--gold); }
+.fusion-picker-item.selected { border-color: var(--cyan); background: rgba(0,255,255,0.05); }
+.fusion-picker-item.locked { opacity: 0.4; cursor: not-allowed; }
+
 /* ── Weather Overlays ── */
 .weather-overlay {
   position: absolute;

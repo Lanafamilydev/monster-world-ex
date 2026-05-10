@@ -24,6 +24,7 @@
     <button class="tnb"     id="tn-shop"    onclick="switchTab('shop')">🏪 SHOP</button>
     <button class="tnb"     id="tn-storage" onclick="switchTab('storage')">📦 KHO</button>
     <button class="tnb"     id="tn-care"    onclick="switchTab('care')">💚 CHĂM SÓC</button>
+    <button class="tnb"     id="tn-fusion"  onclick="switchTab('fusion')">🧪 DUNG HỢP</button>
     <button class="tnb"     id="tn-account" onclick="switchTab('account')">👤 TÀI KHOẢN</button>
   </nav>
 </div>
@@ -204,6 +205,45 @@
       Cho ăn tăng Thân thiện → Bonus ATK/DEF · Nghỉ giảm Mệt mỏi → Tăng SPD
     </div>
     <div id="care-list"></div>
+  </div>
+</div>
+
+<!-- TAB: FUSION -->
+<div class="tab-panel" id="tab-fusion" style="overflow-y:auto">
+  <div id="tab-fusion-inner">
+    <div class="shop-title">🧪 PHÒNG THÍ NGHIỆM DUNG HỢP</div>
+    <div style="font-size:11px;color:#888;text-align:center;margin-bottom:15px;padding:0 20px">
+      Kết hợp 2 quái thú <span style="color:var(--gold)">Cấp 10+</span> để tạo ra chủng loài lai mạnh mẽ.
+    </div>
+    
+    <div id="fusion-ui-container" class="acc-section" style="border:1px dashed #444; border-radius:12px; padding:20px; background:rgba(0,0,0,0.3)">
+      <div style="display:flex; justify-content:space-around; align-items:center; margin-bottom:20px">
+        <div id="fusion-slot-1" class="fusion-slot" onclick="openFusionPicker(1)">
+          <div class="slot-placeholder">?</div>
+        </div>
+        <div style="font-size:24px; color:var(--gold)">+</div>
+        <div id="fusion-slot-2" class="fusion-slot" onclick="openFusionPicker(2)">
+          <div class="slot-placeholder">?</div>
+        </div>
+      </div>
+      
+      <div id="fusion-preview" style="min-height:80px; display:flex; flex-direction:column; align-items:center; justify-content:center; border-top:1px solid #333; padding-top:15px">
+        <div style="color:#555">Chọn 2 quái thú để xem kết quả</div>
+      </div>
+
+      <button id="fusion-btn" class="pb pb-end" style="margin-top:20px; opacity:0.5" disabled onclick="executeFusion()">
+        BẮT ĐẦU DUNG HỢP (500 💰)
+      </button>
+    </div>
+
+    <div class="acc-section">
+      <h3>📜 CÔNG THỨC GỢI Ý</h3>
+      <div id="fusion-recipes-list" style="font-size:10px; color:#aaa; line-height:1.6">
+        • Lửa + Cỏ ➔ Lava Dragon<br>
+        • Nước + Sét ➔ Storm Serpent<br>
+        • Tối + Sáng ➔ Chaos Soldier
+      </div>
+    </div>
   </div>
 </div>
 

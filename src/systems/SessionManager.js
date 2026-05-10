@@ -201,6 +201,15 @@ export function initBattle() {
       }
     }
     if (u.lv >= 10 && EVOLUTIONS[id] && !u.evolved) u.evoReady = true;
+    
+    // V6.0 Hybrid Trait bonus
+    if (P.traits?.[id] === 'hybrid') {
+      u.hp  = Math.ceil(u.hp * 1.1);
+      u.atk = Math.ceil(u.atk * 1.1);
+      u.def = Math.ceil(u.def * 1.1);
+      u.curHp = u.hp;
+      u.n += ' ✦'; 
+    }
 
     // Affinity bonus
     const aff = P.affinity?.[id] || 0;

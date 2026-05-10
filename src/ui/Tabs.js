@@ -51,6 +51,7 @@ export function switchTab(name) {
   if (name === 'storage') renderRosterTab();
   if (name === 'account') renderAccountTab();
   if (name === 'care')    renderCareList();
+  if (name === 'fusion')  renderFusionTab();
 }
 
 /* ── Account tab ─────────────────────────────────────────────── */
@@ -155,3 +156,114 @@ export function renderInventoryDisplay() {
     ).join('');
   });
 }
+
+/* ── Fusion Tab ──────────────────────────────────────────────── */
+let _fSlots = [null, null]; // P.roster indices
+
+export function renderFusionTab() {
+  const el = document.getElementById('tab-fusion-inner');
+  if (!el) return;
+  
+  // Refresh slots display
+  _updateFusionSlotsUI();
+}
+
+function _updateFusionSlotsUI() {
+  const s1 = document.getElementById('fusion-slot-1');
+  const s2 = document.getElementById('fusion-slot-2');
+  const preview = document.getElementById('fusion-preview');
+  const btn = document.getElementById('fusion-btn');
+  if (!s1 || !s2 || !preview || !btn) return;
+
+  import('../core/data.js').then(({ getMonsterBase, FUSION_COST }) => {
+    const m1 = _fSlots[0] !== null ? getMonsterBase(P.roster[_fSlots[0]]) : null;
+    const m2 = _fSlots[1] !== null ? getMonsterBase(P.roster[_fSlots[1]]) : null;
+
+    s1.innerHTML = m1 ? `<div class="fusion-monster"><span>${m1.e}</span><div class="f-lv">LV${P.monsterLevels[m1.id]||1}</div></div>` : '<div class="slot-placeholder">?</div>';
+    s2.innerHTML = m2 ? `<div class="fusion-monster"><span>${m2.e}</span><div class="f-lv">LV${P.monsterLevels[m2.id]||1}</div></div>` : '<div class="slot-placeholder">?</div>';
+
+    if (m1 && m2) {
+      import('../features/Fusion.js').then(({ FusionSystem }) => {
+        const res = FusionSystem.getPreview(m1.id, m2.id);
+        if (res) {
+          preview.innerHTML = `
+            <div style="font-size:10px;color:var(--gold);margin-bottom:5px">DỰ ĐOÁN KẾT QUẢ:</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:24px">${res.e}</span>
+              <div style="text-align:left">
+                <div style="font-weight:bold;color:#fff">${res.n}</div>
+                <div style="font-size:9px;color:#888">${res.desc}</div>
+              </div>
+            </div>
+          `;
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        } else {
+          preview.innerHTML = '<div style="color:var(--red)">Cặp quái này không thể dung hợp!</div>';
+          btn.disabled = true;
+          btn.style.opacity = '0.5';
+        }
+      });
+    } else {
+      preview.innerHTML = '<div style="color:#555">Chọn 2 quái thú để xem kết quả</div>';
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+    }
+  });
+}
+
+window.openFusionPicker = function(slotNum) {
+  const picker = document.createElement('div');
+  picker.className = 'fusion-picker-overlay';
+  
+  import('../core/data.js').then(({ getMonsterBase }) => {
+    let html = `
+      <div class="fusion-picker-content">
+        <div class="shop-title">CHỌN QUÁI THÚ ${slotNum}</div>
+        <div class="fusion-picker-grid">
+    `;
+    
+    P.roster.forEach((id, idx) => {
+      const m = getMonsterBase(id);
+      const lv = P.monsterLevels[id] || 1;
+      const isSelected = _fSlots.includes(idx);
+      const canFuse = lv >= 10;
+      
+      html += `
+        <div class="fusion-picker-item ${isSelected?'selected':''} ${!canFuse?'locked':''}" onclick="${canFuse && !isSelected ? `selectFusionMonster(${idx}, ${slotNum})` : ''}">
+          <div style="font-size:20px">${m.e}</div>
+          <div style="font-size:10px">${m.n}</div>
+          <div style="font-size:9px; color:${canFuse?'var(--gold)':'#f44'}">LV ${lv}</div>
+          ${!canFuse ? '<div style="font-size:8px;color:#f44">Cần LV10</div>' : ''}
+        </div>
+      `;
+    });
+    
+    html += `
+        </div>
+        <button class="pb" style="margin-top:15px; background:#444" onclick="this.closest('.fusion-picker-overlay').remove()">ĐÓNG</button>
+      </div>
+    `;
+    picker.innerHTML = html;
+    document.body.appendChild(picker);
+  });
+};
+
+window.selectFusionMonster = function(idx, slotNum) {
+  _fSlots[slotNum - 1] = idx;
+  document.querySelector('.fusion-picker-overlay')?.remove();
+  _updateFusionSlotsUI();
+};
+
+window.executeFusion = function() {
+  if (_fSlots[0] === null || _fSlots[1] === null) return;
+  
+  import('../features/Fusion.js').then(({ FusionSystem }) => {
+    const success = FusionSystem.fuse(_fSlots[0], _fSlots[1]);
+    if (success) {
+      _fSlots = [null, null];
+      renderFusionTab();
+      updateGlobalHeader();
+    }
+  });
+};
