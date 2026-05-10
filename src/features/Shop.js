@@ -106,3 +106,26 @@ function showGachaResult(monster, tier, isNew) {
 export function closeGachaResult() {
   document.getElementById('gacha-result')?.classList.remove('show');
 }
+
+/** V6.0: Open Rune Gacha */
+export function openRuneGacha() {
+  const cost = 300;
+  if (P.gold < cost) { toast(`Không đủ Vàng! Cần ${cost}💰`); return; }
+
+  P.gold -= cost;
+  
+  import('../features/Runes.js').then(({ RuneSystem }) => {
+    const roll = Math.random() * 100;
+    const rarity = roll < 10 ? 'epic' : roll < 40 ? 'rare' : 'common';
+    const rune = RuneSystem.generateRune(rarity);
+    P.runes.push(rune);
+    savePlayer();
+    updateGlobalHeader();
+    toast(`💎 CHÚC MỪNG! Bạn nhận được Cổ Ngọc [${rarity.toUpperCase()}]!`);
+    
+    // Show visual feedback (reusing gacha result for now or custom)
+    const mockMonster = { n: `Cổ Ngọc ${rarity.toUpperCase()}`, e: '💎', desc: 'Trang bị trong Kho Đội Hình' };
+    showGachaResult(mockMonster, rarity === 'epic' ? 'S' : rarity === 'rare' ? 'A' : 'B', true);
+  });
+}
+

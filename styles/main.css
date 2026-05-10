@@ -723,6 +723,18 @@ body{background:var(--dark);font-family:'Rajdhani',sans-serif;color:#ccc;
   opacity: 0.5;
   cursor: not-allowed;
 }
+.talent-node::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  width: 2px;
+  height: 15px;
+  background: #333;
+  z-index: -1;
+}
+.talent-node.unlocked::after { background: var(--green); }
+.talent-node:last-child::after { display: none; }
+
 .talent-icon { font-size: 24px; }
 .talent-name { font-size: 11px; font-weight: bold; color: #fff; }
 .talent-desc { font-size: 9px; color: #888; line-height: 1.2; }
@@ -1436,8 +1448,8 @@ body{padding-bottom:0}
   .mnb-icon{ font-size: 18px; line-height: 1; }
   .mnb-label{
     font-family: 'Orbitron', sans-serif;
-    font-size: 7px;
-    letter-spacing: .5px;
+    font-size: 6px;
+    letter-spacing: 0px;
     white-space: nowrap;
   }
 

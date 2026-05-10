@@ -106,7 +106,18 @@ function spawnEndlessEnemies(floor, powerScore) {
   else                  pool = [...midPool, ...elitePool, ...elitePool]; // weight elites
 
   // V6.0: Occasionally include a giant boss in elite floors
-  if (floor >= 8 && Math.random() < 0.2) pool.push('obelisk');
+  if (floor >= 7) {
+    if (floor >= 15) pool.push('ra');
+    else if (floor >= 10) pool.push('slifer');
+    else pool.push('obelisk');
+  }
+
+  // Increased chance for Boss encounters every 5 floors
+  const bossChance = (floor % 5 === 0) ? 0.5 : 0.1;
+  if (Math.random() < bossChance && floor >= 7) {
+    const bossId = floor >= 15 ? 'ra' : floor >= 10 ? 'slifer' : 'obelisk';
+    pool = [...elitePool, bossId, bossId]; // Force boss presence in pool
+  }
 
   // Pick 5 random from pool (allow repeats for higher floors)
   const count = Math.min(5, 3 + Math.floor(floor / 3));
