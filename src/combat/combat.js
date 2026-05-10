@@ -266,12 +266,10 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
   }
 
   // V6.0: ASSASSIN class gets higher crit rate and crit damage
-  let critChance = 0.15;
-  let critMult   = 2;
-  if (atker.cls === 'ASSASSIN') {
-    critChance = 0.30;
-    critMult   = 2.5;
-  }
+  // V6.0 Rune System: add crit chance from runes/talents
+  let critChance = (atker.crit || 0) / 100 + (atker.cls === 'ASSASSIN' ? 0.15 : 0.05);
+  let critMult   = atker.cls === 'ASSASSIN' ? 2.5 : 2.0;
+
   let crit = false;
   if (Math.random() < critChance) { 
     dmg = Math.floor(dmg * critMult); 
@@ -281,6 +279,17 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
   dmg = Math.max(1, dmg);
 
   defer.curHp -= dmg;
+
+  // V6.0 Rune System: Lifesteal
+  if (atker.lifesteal > 0) {
+    const heal = Math.floor(dmg * (atker.lifesteal / 100));
+    if (heal > 0) {
+      atker.curHp = Math.min(atker.hp, atker.curHp + heal);
+      if (atkPos) floatTxt(atkPos[0], atkPos[1], `+${heal}`, 'heal', '#44ff88');
+      addLog(`${atker.e} 🩸hút máu +${heal}HP`, 'lm');
+    }
+  }
+
   if (atker.o === 'player') { atker.xp = (atker.xp || 0) + 10; checkLevelUp(atker); }
 
   // Drain

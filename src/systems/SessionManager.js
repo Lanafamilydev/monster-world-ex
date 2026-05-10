@@ -164,7 +164,7 @@ export function initBattle() {
       curHp: base.hp, curMp: base.mp,
       alive: true, moved: false, attacked: false, usedSkill: false,
       xp: 0, status: [], evolved: false, evoReady: false,
-      evoPathId: null,
+      evoPathId: null, runes: [null, null, null],
     };
 
     // Apply persistent levels
@@ -221,6 +221,24 @@ export function initBattle() {
     if (fat > 80)      u.spd = Math.max(1, u.spd - 2);
     else if (fat > 50) u.spd = Math.max(1, u.spd - 1);
 
+    // V6.0 Rune Bonuses
+    import('../features/Runes.js').then(({ RuneSystem }) => {
+      const b = RuneSystem.getBonuses(id);
+      u.atk = Math.ceil(u.atk * (1 + b.atk_pct / 100));
+      u.spd = Math.max(1, u.spd + b.speed);
+      u.crit = (u.crit || 0) + b.crit_chance;
+      u.lifesteal = (u.lifesteal || 0) + b.lifesteal;
+    });
+
+    // V6.0 Talent Bonuses
+    if (P.talents?.nature_blessing && u.elem === 'grass') {
+      u.hp = Math.ceil(u.hp * 1.05);
+      u.curHp = u.hp;
+    }
+    if (P.talents?.tactician) {
+      u.crit = (u.crit || 0) + 5;
+    }
+
     G.units[id] = u;
     G.grid[pr][pc] = id;
   });
@@ -256,6 +274,23 @@ export function handleSessionEnd(winner) {
       savePlayer();
       // Show roguelite reward picker
       setTimeout(() => showEndlessRewardPicker(), 800);
+      
+      // V6.0 Rune Drop (40% chance)
+      if (Math.random() < 0.4) {
+        import('../features/Runes.js').then(({ RuneSystem }) => {
+          const rarity = Session.floor > 10 ? 'epic' : Session.floor > 5 ? 'rare' : 'common';
+          const rune = RuneSystem.generateRune(rarity);
+          P.runes.push(rune);
+          savePlayer();
+          toast(`💎 RƠI NGỌC: Nhận được 1 ngọc ${rune.rarity.toUpperCase()}!`);
+        });
+      }
+      
+      // V6.0 Gem Drop (1-3 Gems)
+      const gems = 1 + Math.floor(Math.random() * 3);
+      P.gems = (P.gems || 0) + gems;
+      savePlayer();
+      toast(`✨ Nhận ${gems} 💎 Gems!`);
     } else {
       toast('💀 Endless kết thúc tại tầng ' + Session.floor);
       savePlayer();

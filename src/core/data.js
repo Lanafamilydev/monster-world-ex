@@ -200,10 +200,34 @@ export const ITEMS = {
   food_basic: { n:'Thức ăn',     e:'🍖', price:30,  max:99, desc:'+10 Thân thiện với quái thú' },
 };
 
+// ── V6.0 Rune System ──
+export const RUNE_TYPES = {
+  atk_pct:     { n: 'ATK%',       i: '⚔️', desc: '+% Sát thương' },
+  crit_chance: { n: 'CRIT%',      i: '🎯', desc: '+% Tỷ lệ chí mạng' },
+  lifesteal:   { n: 'Hút Máu',    i: '🩸', desc: '+% Hồi máu khi đánh' },
+  speed:       { n: 'Tốc độ',     i: '⚡', desc: '+ Tốc độ di chuyển' }
+};
+
+export const RUNE_RARITY = {
+  common: { n: 'Thường', clr: '#888', mult: 1 },
+  rare:   { n: 'Hiếm',   clr: '#4499ff', mult: 2 },
+  epic:   { n: 'Sử Thi', clr: '#ff44ff', mult: 3 }
+};
+
+// ── V6.0 Talent Tree ──
+export const TALENTS = {
+  nature_blessing: { n: "Nature's Blessing", desc: '+5% HP cho hệ Cỏ (Wood)', cost: 5, icon: '🌿' },
+  greedy_merchant: { n: "Greedy Merchant",  desc: '-10% Giá vàng tại Shop',   cost: 10, icon: '💰' },
+  tactician:       { n: "Tactician",        desc: '+5% Tỷ lệ chí mạng toàn đội', cost: 15, icon: '♟️' }
+};
+
 // ── Default player data ──
 export const DEFAULT_PLAYER = {
-  name:'Yugi', gold:500, totalScore:0, wins:0, losses:0, battles:0,
+  name:'Yugi', gold:500, gems:10, totalScore:0, wins:0, losses:0, battles:0,
   inventory:{ hp_potion:2, mp_potion:2, evo_stone:1, food_basic:3 },
+  runes: [], // Player's unequipped runes
+  monsterRunes: {}, // { monsterId: [rune1, rune2, rune3] }
+  talents: {}, // Unlocked talents: { nature_blessing: true }
   collection:['trigan','great_bar','eye_mouse','flower_man','devil_castle'],
   roster:['trigan','great_bar','eye_mouse','flower_man','devil_castle'],
   affinity:{}, fatigue:{}, monsterLevels:{}, traits:{},

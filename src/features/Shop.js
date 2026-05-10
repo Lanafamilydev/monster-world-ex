@@ -25,7 +25,7 @@ export function renderItemShop() {
       <div class="item-info">
         <div class="item-name">${it.n}</div>
         <div class="item-desc">${it.desc}</div>
-        <div class="item-cost">💰 ${it.price} Vàng</div>
+        <div class="item-cost">💰 ${P.talents?.greedy_merchant ? Math.floor(it.price * 0.9) : it.price} Vàng</div>
       </div>
       <div style="text-align:right">
         <div class="item-stock" style="margin-bottom:4px">×${qty}</div>
@@ -41,11 +41,12 @@ export function renderItemShop() {
 export function buyItem(key) {
   const it = ITEMS[key];
   if (!it) { toast('Vật phẩm không tồn tại!'); return; }
-  if (P.gold < it.price) { toast(`Không đủ Vàng! Cần ${it.price}💰`); return; }
+  const price = P.talents?.greedy_merchant ? Math.floor(it.price * 0.9) : it.price;
+  if (P.gold < price) { toast(`Không đủ Vàng! Cần ${price}💰`); return; }
   const qty = P.inventory[key] || 0;
   if (qty >= it.max) { toast('Đã đạt giới hạn tối đa!'); return; }
 
-  P.gold -= it.price;
+  P.gold -= price;
   P.inventory[key] = qty + 1;
   savePlayer();  // ← CRITICAL: saves immediately after purchase
   updateGlobalHeader();
@@ -56,7 +57,8 @@ export function buyItem(key) {
 
 /** Open a gacha pack */
 export function openGacha(type) {
-  const cost = type === 'common' ? 100 : 500;
+  let cost = type === 'common' ? 100 : 500;
+  if (P.talents?.greedy_merchant) cost = Math.floor(cost * 0.9);
   if (P.gold < cost) { toast(`Không đủ Vàng! Cần ${cost}💰`); return; }
 
   const rates  = GACHA_RATES[type];

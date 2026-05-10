@@ -95,7 +95,10 @@ function renderRosterDisplay() {
         </div>
         ${evoRow}
       </div>
-      <button class="rc-remove" title="Rút khỏi đội">✕</button>`;
+      <div class="rc-btns-wrap">
+        <button class="rc-rune-btn" onclick="openRuneManager('${id}')" title="Quản lý ngọc">💎 NGỌC</button>
+        <button class="rc-remove" title="Rút khỏi đội">✕</button>
+      </div>`;
 
     // Remove from roster
     card.querySelector('.rc-remove').addEventListener('click', () => {
@@ -150,10 +153,13 @@ function renderBenchDisplay() {
         </div>
         ${evoRow}
       </div>
-      <button class="rc-add${canAdd ? '' : ' disabled'}" ${canAdd ? '' : 'disabled'}
-        title="${canAdd ? 'Thêm vào đội' : 'Đội đã đầy (5/5)'}">
-        ${canAdd ? '+ Vào Đội' : '🔒 Đầy'}
-      </button>`;
+      <div class="rc-btns-wrap">
+        <button class="rc-rune-btn" onclick="openRuneManager('${id}')" title="Quản lý ngọc">💎 NGỌC</button>
+        <button class="rc-add${canAdd ? '' : ' disabled'}" ${canAdd ? '' : 'disabled'}
+          title="${canAdd ? 'Thêm vào đội' : 'Đội đã đầy (5/5)'}">
+          ${canAdd ? '+ Vào Đội' : '🔒 Đầy'}
+        </button>
+      </div>`;
 
     card.querySelector('.rc-add').addEventListener('click', () => {
       if (!canAdd) { toast('Đội hình đã đầy! Rút quái trước.'); return; }
@@ -238,3 +244,133 @@ export function applyEndlessReward(reward) {
   savePlayer();
   import('../core/playerState.js').then(m => m.updateGlobalHeader());
 }
+
+/* ── Rune Management UI ─────────────────────────────────────── */
+window.openRuneManager = function(monsterId) {
+  const info = getMonsterInfo(monsterId);
+  if (!info) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'rune-manager-overlay';
+  
+  _refreshRuneManagerContent(overlay, monsterId);
+  document.body.appendChild(overlay);
+};
+
+function _refreshRuneManagerContent(overlay, monsterId) {
+  const info = getMonsterInfo(monsterId);
+  const equipped = P.monsterRunes?.[monsterId] || [null, null, null];
+  
+  import('../core/data.js').then(({ RUNE_TYPES, RUNE_RARITY }) => {
+    let html = `
+      <div class="rune-manager-content">
+        <div class="shop-title">💎 KHẢM NGỌC: ${info.e} ${info.n}</div>
+        
+        <div class="rune-slots">
+    `;
+    
+    equipped.forEach((rune, slot) => {
+      if (rune) {
+        html += `
+          <div class="rune-slot filled" onclick="unequipRuneFromSlot('${monsterId}', ${slot})">
+            <div style="font-size:18px">${RUNE_TYPES[rune.type].i}</div>
+            <div style="font-size:9px;color:${RUNE_RARITY[rune.rarity].clr}">${RUNE_TYPES[rune.type].n}</div>
+            <div style="font-size:10px;font-weight:bold">+${rune.val}${rune.type.endsWith('_pct')?'%':''}</div>
+            <div class="rune-slot-action">THÁO</div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="rune-slot empty" onclick="openRunePicker('${monsterId}', ${slot})">
+            <div style="font-size:20px;color:#333">+</div>
+            <div style="font-size:8px;color:#555">TRỐNG</div>
+          </div>
+        `;
+      }
+    });
+
+    html += `
+        </div>
+
+        <div class="acc-section">
+          <h3>📦 KHO NGỌC TRỐNG (${P.runes?.length || 0})</h3>
+          <div class="rune-inventory-grid">
+    `;
+
+    if (!P.runes?.length) {
+      html += '<div style="grid-column: span 3; font-size:10px; color:#555; padding:20px">Chưa có ngọc nào. Tìm ngọc tại chế độ Endless!</div>';
+    } else {
+      P.runes.forEach(rune => {
+        html += `
+          <div class="rune-inv-item">
+            <div style="font-size:14px">${RUNE_TYPES[rune.type].i}</div>
+            <div style="font-size:8px;color:${RUNE_RARITY[rune.rarity].clr}">${RUNE_RARITY[rune.rarity].n}</div>
+            <div style="font-size:9px">+${rune.val}${rune.type.endsWith('_pct')?'%':''}</div>
+          </div>
+        `;
+      });
+    }
+
+    html += `
+          </div>
+        </div>
+        
+        <button class="pb" style="margin-top:15px; background:#444" onclick="this.closest('.rune-manager-overlay').remove()">ĐÓNG</button>
+      </div>
+    `;
+    overlay.innerHTML = html;
+  });
+}
+
+window.openRunePicker = function(monsterId, slot) {
+  if (!P.runes?.length) { toast('Không có ngọc để khảm!'); return; }
+  
+  const picker = document.createElement('div');
+  picker.className = 'rune-picker-overlay';
+  
+  import('../core/data.js').then(({ RUNE_TYPES, RUNE_RARITY }) => {
+    let html = `
+      <div class="rune-picker-content">
+        <div class="shop-title">CHỌN NGỌC KHẢM</div>
+        <div class="rune-picker-grid">
+    `;
+    
+    P.runes.forEach(rune => {
+      html += `
+        <div class="rune-picker-item" onclick="confirmEquipRune('${monsterId}', '${rune.id}', ${slot})">
+          <div style="font-size:20px">${RUNE_TYPES[rune.type].i}</div>
+          <div style="font-size:10px">${RUNE_TYPES[rune.type].n}</div>
+          <div style="font-size:11px;font-weight:bold">+${rune.val}${rune.type.endsWith('_pct')?'%':''}</div>
+          <div style="font-size:8px;color:${RUNE_RARITY[rune.rarity].clr}">${RUNE_RARITY[rune.rarity].n}</div>
+        </div>
+      `;
+    });
+    
+    html += `
+        </div>
+        <button class="pb" style="margin-top:15px; background:#444" onclick="this.closest('.rune-picker-overlay').remove()">HỦY</button>
+      </div>
+    `;
+    picker.innerHTML = html;
+    document.body.appendChild(picker);
+  });
+};
+
+window.confirmEquipRune = function(monsterId, runeId, slot) {
+  import('../features/Runes.js').then(({ RuneSystem }) => {
+    if (RuneSystem.equipRune(monsterId, runeId, slot)) {
+      document.querySelector('.rune-picker-overlay')?.remove();
+      const overlay = document.querySelector('.rune-manager-overlay');
+      if (overlay) _refreshRuneManagerContent(overlay, monsterId);
+    }
+  });
+};
+
+window.unequipRuneFromSlot = function(monsterId, slot) {
+  import('../features/Runes.js').then(({ RuneSystem }) => {
+    if (RuneSystem.unequipRune(monsterId, slot)) {
+      const overlay = document.querySelector('.rune-manager-overlay');
+      if (overlay) _refreshRuneManagerContent(overlay, monsterId);
+    }
+  });
+};

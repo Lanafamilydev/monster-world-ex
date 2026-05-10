@@ -61,6 +61,7 @@ export function renderAccountTab() {
   el.innerHTML = `
     <div class="acc-row"><span class="acc-lbl">👤 Tên</span><span class="acc-val">${P.name||'Yugi'}</span></div>
     <div class="acc-row"><span class="acc-lbl">💰 Vàng</span><span class="acc-val" style="color:var(--gold)">${P.gold}</span></div>
+    <div class="acc-row"><span class="acc-lbl">💎 Gems</span><span class="acc-val" style="color:var(--cyan)">${P.gems||0}</span></div>
     <div class="acc-row"><span class="acc-lbl">⭐ Tổng điểm</span><span class="acc-val" style="color:var(--purple)">${P.totalScore}</span></div>
     <div class="acc-row"><span class="acc-lbl">🏆 Thắng/Thua</span><span class="acc-val">${P.wins}/${P.losses}</span></div>
     <div class="acc-row"><span class="acc-lbl">⚔ Trận đấu</span><span class="acc-val">${P.battles}</span></div>
@@ -68,8 +69,51 @@ export function renderAccountTab() {
     <div class="acc-row"><span class="acc-lbl">♾ Endless Max</span><span class="acc-val" style="color:var(--green)">${P.endlessFloor||0}</span></div>
     <div class="acc-row"><span class="acc-lbl">⚔ Arena Rating</span><span class="acc-val" style="color:var(--orange)">${P.arenaRating||1000}</span></div>`;
   renderInventoryDisplay();
+  renderTalentTree();
   import('../features/LevelUp.js').then(m => m.renderLevelUpList());
 }
+
+/* ── Talent Tree ─────────────────────────────────────────────── */
+export function renderTalentTree() {
+  const el = document.getElementById('talent-tree-display');
+  if (!el) return;
+  
+  import('../core/data.js').then(({ TALENTS }) => {
+    let html = '<div class="talent-grid">';
+    Object.entries(TALENTS).forEach(([tid, t]) => {
+      const isUnlocked = P.talents?.[tid];
+      const canAfford = (P.gems || 0) >= t.cost;
+      
+      html += `
+        <div class="talent-node ${isUnlocked?'unlocked':''} ${!isUnlocked && !canAfford?'cant-afford':''}" onclick="unlockTalent('${tid}')">
+          <div class="talent-icon">${t.icon}</div>
+          <div class="talent-name">${t.n}</div>
+          <div class="talent-desc">${t.desc}</div>
+          <div class="talent-cost">${isUnlocked ? 'ĐÃ MỞ' : `💎 ${t.cost}`}</div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  });
+}
+
+window.unlockTalent = function(tid) {
+  import('../core/data.js').then(({ TALENTS }) => {
+    const t = TALENTS[tid];
+    if (P.talents?.[tid]) { toast('Thiên phú đã được mở!'); return; }
+    if ((P.gems || 0) < t.cost) { toast('Không đủ Gems!'); return; }
+    
+    P.gems -= t.cost;
+    if (!P.talents) P.talents = {};
+    P.talents[tid] = true;
+    
+    savePlayer();
+    updateGlobalHeader();
+    renderAccountTab();
+    toast(`✨ Đã mở thiên phú: ${t.n}!`);
+  });
+};
 
 /* ── Care tab ────────────────────────────────────────────────── */
 export function renderCareList() {
