@@ -10,7 +10,7 @@ import { findU, getReach, getAtkbl, getSkTgts } from '../combat/movement.js';
 import {
   procStatus, doAttack, doSkillAtk, applyStatus,
   checkCapture, checkSpecialTile, checkGameOver,
-  getProvokeTarget,
+  getProvokeTarget, procTileStatuses,
 } from '../combat/combat.js';
 import { selectBestTarget, selectBestSkill } from './EnemySpawner.js';
 
@@ -139,7 +139,19 @@ function smartAIAct(u) {
       let best = null, bd = Infinity;
       rch.forEach(([mr,mc]) => { const d=Math.abs(mr-tgt[0])+Math.abs(mc-tgt[1]); if(d<bd){bd=d;best=[mr,mc];} });
       if (best) {
-        G.grid[best[0]][best[1]] = u.id; G.grid[ur][uc] = null;
+        const size = u.size || 1;
+        // Clear old
+        for (let dr = 0; dr < size; dr++) {
+          for (let dc = 0; dc < size; dc++) {
+            if (G.grid[ur + dr]?.[uc + dc] === u.id) G.grid[ur + dr][uc + dc] = null;
+          }
+        }
+        // Set new
+        for (let dr = 0; dr < size; dr++) {
+          for (let dc = 0; dc < size; dc++) {
+            G.grid[best[0] + dr][best[1] + dc] = u.id;
+          }
+        }
         u.moved = true; ur = best[0]; uc = best[1];
         checkCapture(ur, uc, u.id); checkSpecialTile(ur, uc, u.id);
         addLog(`${u.e} di chuyển (${ur},${uc})`, 'lm');
@@ -169,6 +181,14 @@ function finishEnemy() {
     u.status = u.status.filter(s => s.type !== 'speedup');
   });
   G.turn = 'player'; G.round++;
+  // V6.0: Weather update every 3 rounds
+  if (G.round % 3 === 0) {
+    const weathers = ['CLEAR', 'RAIN', 'FOG'];
+    G.weather = weathers[Math.floor(Math.random() * weathers.length)];
+    addLog(`🌤 Thời tiết chuyển sang: ${G.weather}`, 'lc');
+    import('../ui/UIHelpers.js').then(m => m.toast(`🌤 Thời tiết: ${G.weather}`));
+  }
+  procTileStatuses();
   addLogSep('player', G.round);
   render();
 }

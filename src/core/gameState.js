@@ -34,6 +34,9 @@ export const G = {
   mode:         'campaign',   // 'campaign' | 'endless' | 'arena'
   floor:        1,
   captureGoal:  3,
+  // V6.0 Advanced tactics
+  weather:      'CLEAR', // 'CLEAR' | 'RAIN' | 'FOG'
+  tileStatuses: {},      // { 'r,c': { type: 'WET'|'BURNING'|'FROZEN'|'ELECTRIFIED', turns: N } }
 };
 
 /** Reset G to initial battle state */
@@ -60,4 +63,6 @@ export function resetG() {
   G.ultiReady    = false;
   G.gameOver     = false;
   G.trapsRevealed = new Set();
+  G.weather      = 'CLEAR';
+  G.tileStatuses = {};
 }

@@ -6,7 +6,7 @@ import { G } from '../core/gameState.js';
 import { P, savePlayer, persistMonsterLevel } from '../core/playerState.js';
 import { SKILLS, TERRAIN, STATUS, EVOLUTIONS, ELEM_ICONS, ELEM_COLORS, getElemMult, MONSTER_CLASSES, ELEMENTAL_REACTIONS } from '../core/data.js';
 import { toast, addLog, floatTxt, shakeBoard, screenShake } from '../ui/UIHelpers.js';
-import { findU, getAdj, getReach, getAtkbl, getSkTgts } from './movement.js';
+import { findU, getAdj, getReach, getAtkbl, getSkTgts, getAOEPattern } from './movement.js';
 
 export { findU, getAdj, getReach, getAtkbl, getSkTgts };
 
@@ -14,23 +14,16 @@ export { findU, getAdj, getReach, getAtkbl, getSkTgts };
 
 export function applyStatus(u, type) {
   if (!STATUS[type]) return;
-  // ── V6.0 Elemental Reactions ──
   const reaction = checkElementalReaction(u, type);
-  if (reaction) return; // reaction handled the status
+  if (reaction) return;
   const ex = u.status.find(s => s.type === type);
   if (ex) { ex.turns = STATUS[type].dur; return; }
   u.status.push({ type, turns: STATUS[type].dur });
   addLog(`${u.e} bị ${STATUS[type].icon} ${type}!`, 'lsk');
 }
 
-/**
- * V6.0 Elemental Reactions — triggers when applying a new status
- * to a target that already has a conflicting status.
- * Returns true if a reaction occurred (caller should skip normal apply).
- */
 export function checkElementalReaction(target, newStatus) {
   const pos = findU(target.id);
-  // WET + BURN = VAPORIZE (instant 1.5x damage)
   if (newStatus === 'burn' && target.status.some(s => s.type === 'wet')) {
     target.status = target.status.filter(s => s.type !== 'wet');
     const vapDmg = Math.max(1, Math.floor(target.hp * 0.15));
@@ -39,14 +32,10 @@ export function checkElementalReaction(target, newStatus) {
     if (pos) {
       floatTxt(pos[0], pos[1], `VAPORIZE -${vapDmg}`, 'reaction', '#ffaa00');
       screenShake('heavy');
-    }
-    if (pos) {
       const size = target.size || 1;
       for (let dr = 0; dr < size; dr++) {
         for (let dc = 0; dc < size; dc++) {
-          if (G.grid[pos[0] + dr]?.[pos[1] + dc] === target.id) {
-            G.grid[pos[0] + dr][pos[1] + dc] = null;
-          }
+          if (G.grid[pos[0] + dr]?.[pos[1] + dc] === target.id) G.grid[pos[0] + dr][pos[1] + dc] = null;
         }
       }
       addLog(`💥 ${target.e} bị tiêu diệt bởi VAPORIZE!`, 'ld');
@@ -54,7 +43,6 @@ export function checkElementalReaction(target, newStatus) {
     }
     return true;
   }
-  // WET + FREEZE = FROZEN (stun 1 turn)
   if (newStatus === 'freeze' && target.status.some(s => s.type === 'wet')) {
     target.status = target.status.filter(s => s.type !== 'wet');
     target.status.push({ type: 'stun', turns: 1 });
@@ -65,7 +53,6 @@ export function checkElementalReaction(target, newStatus) {
     }
     return true;
   }
-  // FIRE attack on GRASS elem = BURNING (DoT 2 turns)
   if (newStatus === 'burn' && target.elem === 'grass') {
     target.status = target.status.filter(s => s.type !== 'burn');
     target.status.push({ type: 'burning', turns: 2 });
@@ -77,6 +64,33 @@ export function checkElementalReaction(target, newStatus) {
     return true;
   }
   return false;
+}
+
+/** 
+ * V6.0 Tile Statuses
+ * Tiles can be BURNING, WET, FROZEN, ELECTRIFIED
+ */
+export function applyTileStatus(r, c, type, turns = 3) {
+  G.tileStatuses[`${r},${c}`] = { type, turns };
+  addLog(`🌐 Ô (${r},${c}) trở thành trạng thái ${type}!`, 'lelem');
+}
+
+export function procTileStatuses() {
+  Object.keys(G.tileStatuses).forEach(k => {
+    const s = G.tileStatuses[k];
+    s.turns--;
+    if (s.turns <= 0) delete G.tileStatuses[k];
+    else {
+      const [r, c] = k.split(',').map(Number);
+      const uid = G.grid[r]?.[c];
+      if (uid && G.units[uid]?.alive) {
+        const u = G.units[uid];
+        if (s.type === 'BURNING') { u.curHp -= 2; floatTxt(r, c, '🔥-2', 'damage', '#ff4400'); }
+        else if (s.type === 'WET') { if (!u.status.some(st => st.type === 'wet')) u.status.push({ type:'wet', turns:1 }); }
+        else if (s.type === 'ELECTRIFIED') { u.curHp -= 3; floatTxt(r, c, '⚡-3', 'damage', '#ffdd00'); }
+      }
+    }
+  });
 }
 
 export function procStatus(own) {
@@ -221,7 +235,27 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
 
   dmg = Math.floor(dmg * elemMult);
 
-  // Flanking
+  // V6.0: RAIN/FOG Weather modifiers
+  if (G.weather === 'RAIN') {
+    if (atkElem === 'water') { dmg = Math.floor(dmg * 1.2); addLog('🌧️ Mưa lớn tăng sức mạnh hệ Nước!', 'lelem'); }
+    if (atkElem === 'fire')  { dmg = Math.floor(dmg * 0.8); addLog('🌧️ Mưa dập tắt ngọn lửa...', 'la'); }
+  }
+
+  // V6.0: SHATTER reaction
+  if (atkElem === 'water' && defer.status.some(s => s.type === 'stun')) {
+    dmg = Math.floor(dmg * 1.6);
+    addLog(`💥 SHATTER! ${defer.e} bị vỡ băng!`, 'lelem');
+    if (pos) floatTxt(pos[0], pos[1], `SHATTER -${dmg}`, 'reaction', '#00eeff');
+    defer.status = defer.status.filter(s => s.type !== 'stun');
+    screenShake('heavy');
+  }
+
+  // V6.0 Tile-based state application
+  if (pos) {
+    if (atkElem === 'fire')  applyTileStatus(pos[0], pos[1], 'BURNING');
+    if (atkElem === 'water') applyTileStatus(pos[0], pos[1], 'WET');
+    if (atkElem === 'thunder') applyTileStatus(pos[0], pos[1], 'ELECTRIFIED');
+  }
   let flank = false;
   if (pos) {
     const fk = getAdj(pos[0], pos[1], 1).some(([a,b]) => {
@@ -348,15 +382,14 @@ export function execSkill(fromPos, toPos, sid) {
   u.usedSkill = true;
 
   if (sk.t === 'attack') {
-    if (sk.aoe) {
-      getAdj(tr, tc, 1).concat([[tr, tc]]).forEach(([ar, ac]) => {
-        const tid = G.grid[ar]?.[ac];
-        if (tid && G.units[tid]?.alive && G.units[tid].o !== u.o) doSkillAtk(u, G.units[tid], ar, ac, sk);
-      });
-    } else {
-      const tid = G.grid[tr]?.[tc];
-      if (tid && G.units[tid]?.alive) doSkillAtk(u, G.units[tid], tr, tc, sk);
-    }
+    const targets = sk.pattern 
+      ? getAOEPattern(tr, tc, sk.pattern, sk.r) 
+      : (sk.aoe ? getAdj(tr, tc, 1).concat([[tr, tc]]) : [[tr, tc]]);
+      
+    targets.forEach(([ar, ac]) => {
+      const tid = G.grid[ar]?.[ac];
+      if (tid && G.units[tid]?.alive && G.units[tid].o !== u.o) doSkillAtk(u, G.units[tid], ar, ac, sk);
+    });
   } else if (sk.t === 'heal') {
     const tid = G.grid[tr]?.[tc];
     const tgt = tid ? G.units[tid] : u;

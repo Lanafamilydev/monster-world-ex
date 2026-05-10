@@ -100,6 +100,10 @@ export const SKILLS = {
   ulti_yugi:   { n:'DARK MAGIC',  i:'✨', mp:0, t:'ulti',   r:3, aoe:true,  pw:2.5, fx:'stun',    elem:'dark',    d:'TUYỆT CHIÊU: AOE toàn bản đồ!', ulti:true },
   ulti_trigan: { n:'THUNDER GOD', i:'⚡', mp:0, t:'ulti',   r:5, aoe:false, pw:3.0, fx:'freeze',  elem:'thunder', d:'TUYỆT CHIÊU: Sét thần tức chết!', ulti:true },
   ulti_dark:   { n:'CHAOS VOID',  i:'🌑', mp:0, t:'ulti',   r:3, aoe:true,  pw:2.8, fx:'poison',  elem:'dark',    d:'TUYỆT CHIÊU: Hố đen hút tất cả!', ulti:true },
+  // V6.0 Boss patterns
+  cross_slash:     { n:'Thần Kiếm',   i:'⚔️', mp:6, t:'attack', r:3, aoe:true, pw:1.2, fx:null,      elem:'neutral', pattern:'cross',      d:'Đòn đánh hình chữ thập' },
+  horizontal_sweep:{ n:'Quét Ngang',  i:'🌪', mp:5, t:'attack', r:2, aoe:true, pw:1.0, fx:null,      elem:'neutral', pattern:'horizontal', d:'Quét sạch hàng ngang' },
+  circular_shock:  { n:'Xung Kích',   i:'⭕', mp:7, t:'attack', r:2, aoe:true, pw:1.1, fx:null,      elem:'neutral', pattern:'circular',   d:'Chấn động hình tròn xung quanh' },
 };
 
 // ── Evolutions ──

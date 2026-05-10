@@ -46,7 +46,7 @@ export function onCell(r, c) {
       const selUid = G.grid[G.sel[0]]?.[G.sel[1]];
       if (selUid && G.units[selUid]) {
         const selU = G.units[selUid];
-        G.reach = !selU.moved    ? getReach(G.sel[0], G.sel[1], selU.spd) : [];
+        G.reach = !selU.moved    ? getReach(G.sel[0], G.sel[1], selU.spd, selU.size || 1) : [];
         G.atkbl = !selU.attacked ? getAtkbl(G.sel[0], G.sel[1], selU.o)   : [];
         renderUnitDetail(selU);
       }
@@ -61,8 +61,19 @@ export function onCell(r, c) {
     const mid = G.grid[sr][sc];
     const mu  = G.units[mid];
     if (mu && !mu.moved) {
-      G.grid[r][c]   = mid;
-      G.grid[sr][sc] = null;
+      const size = mu.size || 1;
+      // Clear old cells
+      for (let dr = 0; dr < size; dr++) {
+        for (let dc = 0; dc < size; dc++) {
+          if (G.grid[sr + dr]?.[sc + dc] === mid) G.grid[sr + dr][sc + dc] = null;
+        }
+      }
+      // Fill new cells
+      for (let dr = 0; dr < size; dr++) {
+        for (let dc = 0; dc < size; dc++) {
+          G.grid[r + dr][c + dc] = mid;
+        }
+      }
       mu.moved = true;
       G.sel    = [r, c];
       G.reach  = [];
@@ -102,7 +113,7 @@ export function onCell(r, c) {
     G.activeSk = null;
     G.sel      = [r, c];
     G.phase    = 'sel';
-    G.reach    = !u.moved    ? getReach(r, c, u.spd) : [];
+    G.reach    = !u.moved    ? getReach(r, c, u.spd, u.size || 1) : [];
     G.atkbl    = !u.attacked ? getAtkbl(r, c, u.o)   : [];
     G.skTgts   = [];
     renderUnitDetail(u);   // opens drawer on mobile
@@ -153,7 +164,7 @@ export function pickSkill(uid, sid) {
   // Auto-select unit
   if (!G.sel || G.grid[G.sel[0]]?.[G.sel[1]] !== uid) {
     G.sel   = pos;
-    G.reach = !u.moved ? getReach(pos[0], pos[1], u.spd) : [];
+    G.reach = !u.moved ? getReach(pos[0], pos[1], u.spd, u.size || 1) : [];
     G.atkbl = [];
   }
   G.activeSk = sid;

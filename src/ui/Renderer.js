@@ -109,6 +109,14 @@ export function renderBoard() {
       const td = TERRAIN[t] || TERRAIN.plains;
       if (td.cls) cell.classList.add(td.cls);
 
+      // V6.0: Tile Statuses
+      const ts = G.tileStatuses[`${r},${c}`];
+      if (ts) {
+        const tsi = document.createElement('div');
+        tsi.className = 'tile-status ' + ts.type.toLowerCase();
+        cell.appendChild(tsi);
+      }
+
       if      (G.sel && G.sel[0]===r && G.sel[1]===c)        cell.classList.add('sel');
       else if (G.reach.some(([a,b]) => a===r && b===c))      cell.classList.add('mv');
       else if (G.atkbl.some(([a,b]) => a===r && b===c))      cell.classList.add('atk');
@@ -125,18 +133,24 @@ export function renderBoard() {
       if (uid) {
         const u = G.units[uid];
         if (u?.alive) {
-          // V6.0: Giant Boss rendering (2x2)
-          const isGiant = u.size === 2;
-          if (isGiant && giantRendered.has(uid)) {
+          // V6.0: Giant Boss rendering (2x2 or 3x3)
+          const size = u.size || 1;
+          if (size > 1 && giantRendered.has(uid)) {
             cell.classList.add('giant-boss-part');
           } else {
-            if (isGiant) giantRendered.add(uid);
+            if (size > 1) giantRendered.add(uid);
 
             const uw = document.createElement('div');
             uw.className = 'uw ' + (u.o==='enemy' ? 'u-enemy' : 'u-player')
                          + (u.evolved ? ' u-evolved' : '')
-                         + (isGiant ? ' u-giant-boss' : '');
+                         + (size > 1 ? ' u-giant-boss' : '');
             
+            if (size > 1) {
+              uw.style.width = (size * 100) + '%';
+              uw.style.height = (size * 100) + '%';
+              uw.style.transform = `translate(${(size-1)*50}%, ${(size-1)*50}%)`;
+            }
+
             // V6.0: Provoke shaking
             if (u.status.some(s => s.type === 'provoke')) {
               uw.classList.add('provoke-shaking');
@@ -147,7 +161,7 @@ export function renderBoard() {
 
             const em = document.createElement('span');
             em.className = 'ue'; em.textContent = u.e;
-            if (isGiant) em.style.fontSize = '2em';
+            if (size > 1) em.style.fontSize = (size * 1.2) + 'em';
             uw.appendChild(em);
 
             // V6.0: Class icon badge
@@ -233,6 +247,13 @@ export function renderBoard() {
       });
       bd.appendChild(cell);
     }
+  }
+
+  // V6.0: Weather Overlay
+  if (G.weather !== 'CLEAR') {
+    const wo = document.createElement('div');
+    wo.className = 'weather-overlay ' + G.weather.toLowerCase();
+    bd.appendChild(wo);
   }
 }
 

@@ -24,7 +24,9 @@ const ENEMY_TEMPLATES = {
   vine_queen:    { n:'Vine Queen',    lv:7, hp:24, mp:14, atk:11, def:7, spd:3, e:'🌿', o:'enemy', elem:'grass',   sk:['vine_trap','poison_bite'],desc:'Nữ hoàng dây leo độc tố nguy hiểm' },
   dark_emperor:  { n:'Dark Emperor',  lv:9, hp:26, mp:16, atk:15, def:8, spd:3, e:'👑', o:'enemy', elem:'dark',    sk:['ulti_yugi','drain'],     desc:'Hoàng đế bóng tối quyền lực tuyệt đỉnh' },
   // V6.0: Giant Bosses
-  obelisk:       { n:'Obelisk',       lv:15, hp:80, mp:20, atk:25, def:15,spd:2, e:'🔷', o:'enemy', elem:'neutral',sk:['stomp','barrier'],     desc:'Vị thần khổng lồ với sức mạnh vô song', size: 2 },
+  obelisk:       { n:'Obelisk',       lv:15, hp:80, mp:20, atk:25, def:15,spd:2, e:'🔷', o:'enemy', elem:'neutral',sk:['cross_slash','stomp'],     desc:'Vị thần khổng lồ với sức mạnh vô song', size: 2 },
+  slifer:        { n:'Slifer',        lv:15, hp:70, mp:25, atk:30, def:10,spd:3, e:'🐉', o:'enemy', elem:'fire',   sk:['horizontal_sweep','flame_breath'], desc:'Rồng bầu trời của thần', size: 2 },
+  ra:            { n:'Ra',            lv:18, hp:100, mp:30, atk:35, def:20,spd:1, e:'🌞', o:'enemy', elem:'light',  sk:['circular_shock','ulti_yugi'],     desc:'Thần mặt trời tối cao', size: 3 },
 };
 
 /** Scale a unit's stats by a multiplier */

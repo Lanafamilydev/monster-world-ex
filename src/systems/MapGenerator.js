@@ -133,9 +133,11 @@ export function generateMap(mode = 'campaign', floor = 1) {
 
   // Difficulty-based terrain density
   const difficultyFactor = Math.min(1, (floor - 1) / 10);
-  const waterCount   = Math.floor((rows * cols * 0.05) + difficultyFactor * rows);
-  const mountainCount= Math.floor((rows * cols * 0.04) + difficultyFactor * rows * 0.5);
-  const forestCount  = Math.floor((rows * cols * 0.15) + difficultyFactor * 3);
+  const isBossFloor = floor % 7 === 0;
+
+  const waterCount   = isBossFloor ? 0 : Math.floor((rows * cols * 0.05) + difficultyFactor * rows);
+  const mountainCount= isBossFloor ? 2 : Math.floor((rows * cols * 0.04) + difficultyFactor * rows * 0.5);
+  const forestCount  = isBossFloor ? 4 : Math.floor((rows * cols * 0.15) + difficultyFactor * 3);
   const castleCount  = 2 + Math.floor(difficultyFactor * 2);
   const trapCount    = 2 + Math.floor(difficultyFactor * 4);
   const speedupCount = 2 + Math.floor(difficultyFactor * 2);
