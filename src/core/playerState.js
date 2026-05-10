@@ -8,35 +8,104 @@ import { SAVE_KEY, DEFAULT_PLAYER } from './data.js';
 // Mutable player object — imported by all modules
 export const P = {};
 
-/** Save player state to localStorage */
-export function savePlayer() {
+// ── IndexedDB Wrapper ──
+const DB_NAME = 'MonsterWorldDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'saveData';
+
+async function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function dbSet(key, value) {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function dbGet(key) {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const request = tx.objectStore(STORE_NAME).get(key);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+/** Save player state to localStorage and IndexedDB */
+export async function savePlayer() {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(P));
+    const json = JSON.stringify(P);
+    localStorage.setItem(SAVE_KEY, json);
+    await dbSet(SAVE_KEY, P);
   } catch (e) {
     console.warn('Cannot save:', e);
   }
 }
 
-/** Load player from localStorage — returns true if found */
-export function loadPlayer() {
+/** Load player from IndexedDB or localStorage fallback */
+export async function loadPlayer() {
   try {
-    const d = localStorage.getItem(SAVE_KEY);
-    if (!d) return false;
-    const saved = JSON.parse(d);
+    let data = await dbGet(SAVE_KEY);
+    if (!data) {
+      const d = localStorage.getItem(SAVE_KEY);
+      if (d) data = JSON.parse(d);
+    }
+    if (!data) return false;
+
     // Deep merge with defaults for forward compatibility
-    const merged = Object.assign({}, DEFAULT_PLAYER, saved, {
-      inventory:     Object.assign({}, DEFAULT_PLAYER.inventory, saved.inventory || {}),
-      affinity:      Object.assign({}, saved.affinity || {}),
-      fatigue:       Object.assign({}, saved.fatigue || {}),
-      monsterLevels: Object.assign({}, saved.monsterLevels || {}),
-      roster:        (saved.roster && saved.roster.length) ? saved.roster : [...DEFAULT_PLAYER.roster],
-      collection:    saved.collection || [...DEFAULT_PLAYER.collection],
+    const merged = Object.assign({}, DEFAULT_PLAYER, data, {
+      inventory:     Object.assign({}, DEFAULT_PLAYER.inventory, data.inventory || {}),
+      affinity:      Object.assign({}, data.affinity || {}),
+      fatigue:       Object.assign({}, data.fatigue || {}),
+      monsterLevels: Object.assign({}, data.monsterLevels || {}),
+      roster:        (data.roster && data.roster.length) ? data.roster : [...DEFAULT_PLAYER.roster],
+      collection:    data.collection || [...DEFAULT_PLAYER.collection],
+      talents:       Object.assign({}, data.talents || {}),
+      monsterRunes:  Object.assign({}, data.monsterRunes || {}),
+      runes:         data.runes || [],
     });
     Object.assign(P, merged);
     return true;
   } catch (e) {
     console.warn('Load error:', e);
     return false;
+  }
+}
+
+/** Export save data as Base64 string */
+export function exportSave() {
+  const json = JSON.stringify(P);
+  return btoa(unescape(encodeURIComponent(json)));
+}
+
+/** Import save data from Base64 string */
+export async function importSave(b64) {
+  try {
+    const json = decodeURIComponent(escape(atob(b64)));
+    const data = JSON.parse(json);
+    if (data && data.name) {
+      Object.assign(P, data);
+      await savePlayer();
+      location.reload(); 
+    }
+  } catch (e) {
+    showToast('❌ Lỗi: Mã lưu trữ không hợp lệ!');
   }
 }
 
