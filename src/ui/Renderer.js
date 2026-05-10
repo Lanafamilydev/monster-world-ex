@@ -9,6 +9,7 @@ import {
   TERRAIN, STATUS, SKILLS, EVOLUTIONS,
   ELEM_ICONS, ELEM_COLORS, ITEMS, MONSTER_CLASSES,
 } from '../core/data.js';
+import { getDamagePreview, getProvokeTarget } from '../combat/combat.js';
 import { findU } from '../combat/movement.js';
 
 // ── State ─────────────────────────────────────────────────────
@@ -135,6 +136,12 @@ export function renderBoard() {
             uw.className = 'uw ' + (u.o==='enemy' ? 'u-enemy' : 'u-player')
                          + (u.evolved ? ' u-evolved' : '')
                          + (isGiant ? ' u-giant-boss' : '');
+            
+            // V6.0: Provoke shaking
+            if (u.status.some(s => s.type === 'provoke')) {
+              uw.classList.add('provoke-shaking');
+            }
+
             const ex = (u.moved && u.attacked) || (u.o==='enemy' && G.turn==='player');
             if (ex) uw.classList.add('exhausted');
 
@@ -163,11 +170,47 @@ export function renderBoard() {
           }
 
           const hb = document.createElement('div'); hb.className = 'chp';
+          if (u.size === 2) hb.style.width = '190%'; // Wider HP bar for boss
+          
           const hf = document.createElement('div'); hf.className = 'chpf';
           const hp = u.curHp / u.hp;
           hf.style.width = Math.max(0, hp*100) + '%';
           hf.style.background = hp>0.5 ? '#e03030' : hp>0.25 ? '#ff8800' : '#ff2222';
-          hb.appendChild(hf); cell.appendChild(hb);
+          hb.appendChild(hf); 
+          
+          // V6.0: Status icons below HP bar
+          if (u.status.length) {
+            const sts = document.createElement('div');
+            sts.style.display = 'flex';
+            sts.style.gap = '1px';
+            sts.style.marginTop = '1px';
+            u.status.slice(0, 4).forEach(s => {
+              const ico = document.createElement('span');
+              ico.textContent = STATUS[s.type]?.icon || '';
+              ico.style.fontSize = '6px';
+              sts.appendChild(ico);
+            });
+            hb.appendChild(sts);
+          }
+          cell.appendChild(hb);
+
+          // ── V6.0 Battle Forecast Overlay ───────────────────────
+          if (G.sel && u.o === 'enemy' && (cell.classList.contains('atk') || cell.classList.contains('sk'))) {
+            const selUid = G.grid[G.sel[0]][G.sel[1]];
+            const atker = G.units[selUid];
+            if (atker) {
+              const preview = getDamagePreview(atker, u, G.phase === 'sk', G.activeSk);
+              if (preview) {
+                const fb = document.createElement('div');
+                fb.className = 'forecast-bubble';
+                fb.innerHTML = `
+                  <span class="forecast-dmg">-${preview.dmg}HP</span>
+                  ${preview.reaction ? `<span class="forecast-react">${preview.reaction}!</span>` : ''}
+                `;
+                cell.appendChild(fb);
+              }
+            }
+          }
 
           const lv = document.createElement('div'); lv.className='clv'; lv.textContent=u.lv;
           cell.appendChild(lv);

@@ -5,7 +5,7 @@
 import { G } from '../core/gameState.js';
 import { P, savePlayer, persistMonsterLevel } from '../core/playerState.js';
 import { SKILLS, TERRAIN, STATUS, EVOLUTIONS, ELEM_ICONS, ELEM_COLORS, getElemMult, MONSTER_CLASSES, ELEMENTAL_REACTIONS } from '../core/data.js';
-import { toast, addLog, floatTxt, shakeBoard } from '../ui/UIHelpers.js';
+import { toast, addLog, floatTxt, shakeBoard, screenShake } from '../ui/UIHelpers.js';
 import { findU, getAdj, getReach, getAtkbl, getSkTgts } from './movement.js';
 
 export { findU, getAdj, getReach, getAtkbl, getSkTgts };
@@ -36,7 +36,10 @@ export function checkElementalReaction(target, newStatus) {
     const vapDmg = Math.max(1, Math.floor(target.hp * 0.15));
     target.curHp -= vapDmg;
     addLog(`💨 VAPORIZE! ${target.e} −${vapDmg}HP (1.5x)`, 'lelem');
-    if (pos) floatTxt(pos[0], pos[1], `💨VAPORIZE -${vapDmg}`, '#ffaa00');
+    if (pos) {
+      floatTxt(pos[0], pos[1], `VAPORIZE -${vapDmg}`, 'reaction', '#ffaa00');
+      screenShake('heavy');
+    }
     if (pos) {
       const size = target.size || 1;
       for (let dr = 0; dr < size; dr++) {
@@ -56,7 +59,10 @@ export function checkElementalReaction(target, newStatus) {
     target.status = target.status.filter(s => s.type !== 'wet');
     target.status.push({ type: 'stun', turns: 1 });
     addLog(`🧊 FROZEN! ${target.e} bị đóng băng hoàn toàn 1 lượt!`, 'lelem');
-    if (pos) floatTxt(pos[0], pos[1], '🧊FROZEN!', '#00eeff');
+    if (pos) {
+      floatTxt(pos[0], pos[1], 'FROZEN!', 'reaction', '#00eeff');
+      screenShake('lite');
+    }
     return true;
   }
   // FIRE attack on GRASS elem = BURNING (DoT 2 turns)
@@ -64,7 +70,10 @@ export function checkElementalReaction(target, newStatus) {
     target.status = target.status.filter(s => s.type !== 'burn');
     target.status.push({ type: 'burning', turns: 2 });
     addLog(`🔥 BURNING! ${target.e} bị cháy liên tục 2 lượt!`, 'lelem');
-    if (pos) floatTxt(pos[0], pos[1], '🔥BURNING!', '#ff4400');
+    if (pos) {
+      floatTxt(pos[0], pos[1], 'BURNING!', 'reaction', '#ff4400');
+      screenShake('lite');
+    }
     return true;
   }
   return false;
@@ -230,7 +239,11 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
     critMult   = 2.5;
   }
   let crit = false;
-  if (Math.random() < critChance) { dmg = Math.floor(dmg * critMult); crit = true; }
+  if (Math.random() < critChance) { 
+    dmg = Math.floor(dmg * critMult); 
+    crit = true; 
+    screenShake(atker.cls === 'ASSASSIN' ? 'heavy' : 'lite');
+  }
   dmg = Math.max(1, dmg);
 
   defer.curHp -= dmg;
@@ -241,7 +254,7 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
     const h = Math.floor(dmg * 0.4);
     atker.curHp = Math.min(atker.hp, atker.curHp + h);
     const ap2 = findU(atker.id);
-    if (ap2) floatTxt(ap2[0], ap2[1], '+' + h, '#44ff88');
+    if (ap2) floatTxt(ap2[0], ap2[1], '+' + h, 'heal', '#44ff88');
   }
 
   // Combo
@@ -257,7 +270,7 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
   G.score += dmg * Math.min(G.combo, G.comboMax) * (crit ? 2 : 1);
 
   const fClr = isStrong ? '#ffdd00' : isWeak ? '#8888ff' : '#ff4444';
-  floatTxt(tr, tc, crit ? `CRIT!-${dmg}` : isStrong ? `★-${dmg}` : isWeak ? `▽-${dmg}` : `-${dmg}`, fClr);
+  floatTxt(tr, tc, crit ? `CRIT!-${dmg}` : isStrong ? `★-${dmg}` : isWeak ? `▽-${dmg}` : `-${dmg}`, 'damage', fClr);
 
   if (crit)          addLog(`${atker.e} CRITICAL! ${defer.e} −${dmg}HP`, 'lcr');
   else if (isStrong) addLog(`${ELEM_ICONS[atkElem]||''}KHẮC CHẾ! ${atker.e}→${defer.e} −${dmg}HP`, 'lelem');
@@ -271,7 +284,7 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
       const cd = Math.max(1, Math.floor(defer.atk * 0.5) - atker.def);
       atker.curHp -= cd;
       addLog(`↩ ${defer.e} phản đòn −${cd}HP`, 'la');
-      floatTxt(ap[0], ap[1], `-${cd}`, '#ff8844');
+      floatTxt(ap[0], ap[1], `-${cd}`, 'damage', '#ff8844');
       if (atker.curHp <= 0) {
         atker.curHp = 0; atker.alive = false;
         const size = atker.size || 1;
@@ -509,4 +522,44 @@ function _gameOver(winner) {
      💰 +${goldEarned} Vàng &nbsp;|&nbsp; ⭐ +${G.score} Điểm<br>
      <span style="font-size:9px;color:#555">Tổng Vàng: ${P.gold} · Tổng Điểm: ${P.totalScore}</span>`;
   ov.classList.add('show');
+}
+// ── Battle Preview Logic (V6.0 UX) ───────────────────────────
+
+export function getDamagePreview(atker, defer, isSk = false, sid = null) {
+  if (!atker || !defer) return null;
+  const sk = sid ? SKILLS[sid] : null;
+  const atkElem = sk?.elem || atker.elem || 'neutral';
+  const defElem = defer.elem || 'neutral';
+  let elemMult = getElemMult(atkElem, defElem);
+  
+  // WET check
+  if (defer.status.some(s => s.type === 'wet') && atkElem === 'thunder') {
+    elemMult *= 1.3;
+  }
+
+  const bsk = atker.status.some(s => s.type === 'berserk');
+  const shld = defer.status.some(s => s.type === 'shield');
+  
+  // Shrine boost (simplistic check for preview)
+  const pos = findU(atker.id);
+  const tile = pos ? G.activeMap[pos[0]]?.[pos[1]] : null;
+  const SHRINE_MAP = { fire_shrine:'fire', water_shrine:'water', dark_shrine:'dark' };
+  const shrineBoost = (tile && SHRINE_MAP[tile] === atkElem) ? 1.25 : 1.0;
+
+  const eAtk = Math.floor(atker.atk * (bsk ? 1.5 : 1) * shrineBoost);
+  const eDef = defer.def + (shld ? 5 : 0); // Simplified (ignoring terrain for preview)
+
+  let baseDmg = isSk && sk ? Math.floor(atker.atk * sk.pw) : eAtk;
+  let dmg = Math.max(1, baseDmg - eDef);
+  dmg = Math.floor(dmg * elemMult);
+
+  // Check for reaction
+  let reaction = null;
+  if (isSk && sk?.fx) {
+    if (sk.fx === 'burn' && defer.status.some(s => s.type === 'wet')) reaction = 'VAPORIZE';
+    else if (sk.fx === 'freeze' && defer.status.some(s => s.type === 'wet')) reaction = 'FROZEN';
+    else if (sk.fx === 'burn' && defer.elem === 'grass') reaction = 'BURNING';
+  }
+
+  return { dmg, reaction, newHp: Math.max(0, defer.curHp - dmg) };
 }

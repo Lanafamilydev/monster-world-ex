@@ -567,6 +567,117 @@ body{background:var(--dark);font-family:'Rajdhani',sans-serif;color:#ccc;
   background: rgba(224,48,48,.05) !important;
   box-shadow: inset 0 0 10px rgba(224,48,48,.1);
 }
+
+/* ── Giant Boss Aura ── */
+.u-giant-boss::before {
+  content: '';
+  position: absolute;
+  inset: -15%;
+  border: 3px solid rgba(224,48,48,0.4);
+  border-radius: 12px;
+  animation: giant-aura 1.5s infinite alternate;
+  z-index: -1;
+  pointer-events: none;
+}
+@keyframes giant-aura {
+  0% { transform: translate(25%, 25%) scale(0.95); opacity: 0.4; box-shadow: 0 0 15px var(--rg); }
+  100% { transform: translate(25%, 25%) scale(1.05); opacity: 0.8; box-shadow: 0 0 40px var(--rg); }
+}
+
+/* ── Ground Crack Effect under Giant Boss ── */
+.u-giant-boss::after {
+  content: '💥';
+  position: absolute;
+  bottom: -15%;
+  left: 30%;
+  font-size: 24px;
+  opacity: 0.3;
+  z-index: -2;
+  filter: grayscale(1) blur(1px);
+  transform: translate(25%, 25%) rotateX(60deg);
+}
+
+/* ── Combat UX Polish ── */
+.df {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  text-shadow: 0 0 8px rgba(0,0,0,0.8);
+  animation: float-up 1s ease-out forwards;
+}
+.df.reaction {
+  font-size: 18px;
+  letter-spacing: 1px;
+  animation: float-up-reaction 1.2s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+@keyframes float-up {
+  0% { opacity: 0; transform: translateY(0); }
+  20% { opacity: 1; transform: translateY(-10px); }
+  100% { opacity: 0; transform: translateY(-40px); }
+}
+@keyframes float-up-reaction {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  30% { opacity: 1; transform: translateY(-20px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-60px) scale(1); }
+}
+
+/* ── Battle Forecast Overlay ── */
+.forecast-bubble {
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 9px;
+  color: #fff;
+  white-space: nowrap;
+  z-index: 20;
+  pointer-events: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeIn 0.2s ease-out;
+}
+.forecast-dmg { color: var(--red); font-weight: 700; font-family: 'Orbitron', sans-serif; }
+.forecast-react { color: var(--cyan); font-style: italic; font-size: 8px; }
+
+/* ── Provoke Visual ── */
+.provoke-shaking {
+  animation: provoke-shake 0.2s infinite;
+}
+@keyframes provoke-shake {
+  0% { transform: translate(0,0); }
+  25% { transform: translate(1px, 1px); }
+  50% { transform: translate(-1px, -1px); }
+  75% { transform: translate(-1px, 1px); }
+  100% { transform: translate(1px, -1px); }
+}
+
+/* ── Screen Shake ── */
+.shake-lite { animation: shake-lite 0.3s ease-out; }
+.shake-heavy { animation: shake-heavy 0.5s ease-out; }
+@keyframes shake-lite {
+  0%, 100% { transform: translate(0,0); }
+  25% { transform: translate(-2px, 2px); }
+  50% { transform: translate(2px, -2px); }
+  75% { transform: translate(-1px, 1px); }
+}
+@keyframes shake-heavy {
+  0%, 100% { transform: translate(0,0); }
+  10% { transform: translate(-5px, 5px); }
+  30% { transform: translate(5px, -5px); }
+  50% { transform: translate(-8px, 0); }
+  70% { transform: translate(8px, 0); }
+  90% { transform: translate(-3px, 3px); }
+}
+
 .cst [title="wet"] { color: var(--water); text-shadow: 0 0 4px var(--water); }
 .cst [title="burn"] { color: var(--fire); text-shadow: 0 0 4px var(--fire); }
 .cst [title="frozen"] { color: var(--cyan); text-shadow: 0 0 4px var(--cyan); }

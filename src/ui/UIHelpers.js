@@ -46,8 +46,8 @@ export function addLogSep(turn, round) {
   syncMobLog();
 }
 
-/** Float damage/heal text over a board cell */
-export function floatTxt(r, c, text, color = '#fff') {
+/** Float damage/heal/reaction text over a board cell */
+export function floatTxt(r, c, text, type = 'damage', color = '#fff') {
   const bd = document.getElementById('board');
   if (!bd) return;
   const cells  = bd.querySelectorAll('.cell');
@@ -60,22 +60,26 @@ export function floatTxt(r, c, text, color = '#fff') {
   const rect  = cell.getBoundingClientRect();
   const brect = bd.getBoundingClientRect();
   const el = document.createElement('div');
-  el.className = 'df';
+  el.className = 'df ' + type;
   el.textContent = text;
-  el.style.color = color;
+  if (color) el.style.color = color;
   el.style.left  = (rect.left - brect.left + rect.width / 2 - 20) + 'px';
   el.style.top   = (rect.top  - brect.top) + 'px';
   bd.appendChild(el);
   setTimeout(() => el.remove(), 1200);
 }
 
-/** Shake the board */
-export function shakeBoard() {
+/** Shake the board or whole container with varying intensity */
+export function screenShake(intensity = 'lite') {
   const bd = document.getElementById('board');
   if (!bd) return;
-  bd.classList.add('shake');
-  setTimeout(() => bd.classList.remove('shake'), 520);
+  const cls = 'shake-' + intensity;
+  bd.classList.add(cls);
+  setTimeout(() => bd.classList.remove(cls), intensity === 'heavy' ? 500 : 300);
 }
+
+/** Shake the board (legacy support) */
+export function shakeBoard() { screenShake('lite'); }
 
 /**
  * Show cancel button — targets ALL .cancel-btn-all elements
