@@ -10,6 +10,7 @@ import { findU, getReach, getAtkbl, getSkTgts } from '../combat/movement.js';
 import {
   procStatus, doAttack, doSkillAtk, applyStatus,
   checkCapture, checkSpecialTile, checkGameOver,
+  getProvokeTarget,
 } from '../combat/combat.js';
 import { selectBestTarget, selectBestSkill } from './EnemySpawner.js';
 
@@ -98,6 +99,17 @@ function smartAIAct(u) {
   // Step 2: Melee if adjacent
   const adj = getAtkbl(ur, uc, 'enemy');
   if (adj.length && !u.attacked) {
+    // V6.0: Provoke — TANK forces attack
+    const provoked = getProvokeTarget(u);
+    if (provoked) {
+      const tid = G.grid[provoked.pos[0]]?.[provoked.pos[1]];
+      if (tid && G.units[tid]) {
+        addLog(`💢 ${u.e} bị khiêu khích bởi ${provoked.unit.e}!`, 'lsk');
+        doAttack(u, G.units[tid], provoked.pos[0], provoked.pos[1], false);
+        u.attacked = true;
+      }
+      return;
+    }
     const best = isHighLevel ? selectBestTarget(u, adj) : adj[0];
     if (best) {
       const tid = G.grid[best[0]]?.[best[1]];

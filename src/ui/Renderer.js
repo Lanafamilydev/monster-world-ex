@@ -7,7 +7,7 @@ import { G } from '../core/gameState.js';
 import { P } from '../core/playerState.js';
 import {
   TERRAIN, STATUS, SKILLS, EVOLUTIONS,
-  ELEM_ICONS, ELEM_COLORS, ITEMS,
+  ELEM_ICONS, ELEM_COLORS, ITEMS, MONSTER_CLASSES,
 } from '../core/data.js';
 import { findU } from '../combat/movement.js';
 
@@ -96,6 +96,9 @@ export function renderBoard() {
   const bw = document.getElementById('bw');
   if (bw) bw.classList.toggle('drawer-active', _drawerOpen && isMobile());
 
+  // V6.0: Track giant boss cells already rendered
+  const giantRendered = new Set();
+
   for (let r = 0; r < G.rows; r++) {
     for (let c = 0; c < G.cols; c++) {
       const cell = document.createElement('div');
@@ -121,23 +124,43 @@ export function renderBoard() {
       if (uid) {
         const u = G.units[uid];
         if (u?.alive) {
-          const uw = document.createElement('div');
-          uw.className = 'uw ' + (u.o==='enemy' ? 'u-enemy' : 'u-player')
-                       + (u.evolved ? ' u-evolved' : '');
-          const ex = (u.moved && u.attacked) || (u.o==='enemy' && G.turn==='player');
-          if (ex) uw.classList.add('exhausted');
+          // V6.0: Giant Boss rendering (2x2)
+          const isGiant = u.size === 2;
+          if (isGiant && giantRendered.has(uid)) {
+            cell.classList.add('giant-boss-part');
+          } else {
+            if (isGiant) giantRendered.add(uid);
 
-          const em = document.createElement('span');
-          em.className = 'ue'; em.textContent = u.e;
-          uw.appendChild(em);
+            const uw = document.createElement('div');
+            uw.className = 'uw ' + (u.o==='enemy' ? 'u-enemy' : 'u-player')
+                         + (u.evolved ? ' u-evolved' : '')
+                         + (isGiant ? ' u-giant-boss' : '');
+            const ex = (u.moved && u.attacked) || (u.o==='enemy' && G.turn==='player');
+            if (ex) uw.classList.add('exhausted');
 
-          if (u.status.length) {
-            const si = document.createElement('div');
-            si.className = 'cst';
-            si.textContent = u.status.slice(0,2).map(s => STATUS[s.type]?.icon||'').join('');
-            uw.appendChild(si);
+            const em = document.createElement('span');
+            em.className = 'ue'; em.textContent = u.e;
+            if (isGiant) em.style.fontSize = '2em';
+            uw.appendChild(em);
+
+            // V6.0: Class icon badge
+            if (u.cls && MONSTER_CLASSES[u.cls]) {
+              const clsIcon = document.createElement('div');
+              clsIcon.className = 'ccls';
+              clsIcon.textContent = MONSTER_CLASSES[u.cls].icon;
+              clsIcon.title = u.cls;
+              uw.appendChild(clsIcon);
+            }
+
+            // V6.0: Enhanced status icons
+            if (u.status.length) {
+              const si = document.createElement('div');
+              si.className = 'cst';
+              si.textContent = u.status.slice(0,3).map(s => STATUS[s.type]?.icon||'').join('');
+              uw.appendChild(si);
+            }
+            cell.appendChild(uw);
           }
-          cell.appendChild(uw);
 
           const hb = document.createElement('div'); hb.className = 'chp';
           const hf = document.createElement('div'); hf.className = 'chpf';
@@ -188,6 +211,7 @@ export function renderCards() {
       card.innerHTML =
         '<div class="uct">' +
           `<span>${u.e}</span>` +
+          (u.cls && MONSTER_CLASSES[u.cls] ? `<span class="uc-cls" title="${u.cls}">${MONSTER_CLASSES[u.cls].icon}</span>` : '') +
           `<span class="ucn">${u.n}${u.evolved?'★':''}</span>` +
           `<span class="ucl">L${u.lv}</span>` +
           `<span style="font-size:9px">${si}</span>` +

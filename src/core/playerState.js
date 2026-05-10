@@ -132,7 +132,8 @@ export function persistMonsterLevel(unitObj) {
   if (!existing) {
     P.monsterLevels[unitObj.id] = {
       lv: unitObj.lv, xp: unitObj.xp,
-      evolved: unitObj.evolved, evoPathId: unitObj.evoPathId || null
+      evolved: unitObj.evolved, evoPathId: unitObj.evoPathId || null,
+      cls: unitObj.cls || null, status: unitObj.status || []
     };
   } else {
     // Prevent battle from overwriting a higher manual level
@@ -146,6 +147,8 @@ export function persistMonsterLevel(unitObj) {
     // Always preserve evolution state
     if (unitObj.evolved) existing.evolved = true;
     if (unitObj.evoPathId) existing.evoPathId = unitObj.evoPathId;
+    if (unitObj.cls) existing.cls = unitObj.cls;
+    if (unitObj.status) existing.status = unitObj.status;
   }
 }
 

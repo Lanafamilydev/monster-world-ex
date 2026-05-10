@@ -4,7 +4,7 @@
 
 import { G } from '../core/gameState.js';
 import { P, savePlayer, persistMonsterLevel } from '../core/playerState.js';
-import { SKILLS, TERRAIN, STATUS, EVOLUTIONS, ELEM_ICONS, ELEM_COLORS, getElemMult } from '../core/data.js';
+import { SKILLS, TERRAIN, STATUS, EVOLUTIONS, ELEM_ICONS, ELEM_COLORS, getElemMult, MONSTER_CLASSES, ELEMENTAL_REACTIONS } from '../core/data.js';
 import { toast, addLog, floatTxt, shakeBoard } from '../ui/UIHelpers.js';
 import { findU, getAdj, getReach, getAtkbl, getSkTgts } from './movement.js';
 
@@ -14,10 +14,60 @@ export { findU, getAdj, getReach, getAtkbl, getSkTgts };
 
 export function applyStatus(u, type) {
   if (!STATUS[type]) return;
+  // ── V6.0 Elemental Reactions ──
+  const reaction = checkElementalReaction(u, type);
+  if (reaction) return; // reaction handled the status
   const ex = u.status.find(s => s.type === type);
   if (ex) { ex.turns = STATUS[type].dur; return; }
   u.status.push({ type, turns: STATUS[type].dur });
   addLog(`${u.e} bị ${STATUS[type].icon} ${type}!`, 'lsk');
+}
+
+/**
+ * V6.0 Elemental Reactions — triggers when applying a new status
+ * to a target that already has a conflicting status.
+ * Returns true if a reaction occurred (caller should skip normal apply).
+ */
+export function checkElementalReaction(target, newStatus) {
+  const pos = findU(target.id);
+  // WET + BURN = VAPORIZE (instant 1.5x damage)
+  if (newStatus === 'burn' && target.status.some(s => s.type === 'wet')) {
+    target.status = target.status.filter(s => s.type !== 'wet');
+    const vapDmg = Math.max(1, Math.floor(target.hp * 0.15));
+    target.curHp -= vapDmg;
+    addLog(`💨 VAPORIZE! ${target.e} −${vapDmg}HP (1.5x)`, 'lelem');
+    if (pos) floatTxt(pos[0], pos[1], `💨VAPORIZE -${vapDmg}`, '#ffaa00');
+    if (pos) {
+      const size = target.size || 1;
+      for (let dr = 0; dr < size; dr++) {
+        for (let dc = 0; dc < size; dc++) {
+          if (G.grid[pos[0] + dr]?.[pos[1] + dc] === target.id) {
+            G.grid[pos[0] + dr][pos[1] + dc] = null;
+          }
+        }
+      }
+      addLog(`💥 ${target.e} bị tiêu diệt bởi VAPORIZE!`, 'ld');
+      if (target.o === 'enemy') G.killed.p++; else G.killed.e++;
+    }
+    return true;
+  }
+  // WET + FREEZE = FROZEN (stun 1 turn)
+  if (newStatus === 'freeze' && target.status.some(s => s.type === 'wet')) {
+    target.status = target.status.filter(s => s.type !== 'wet');
+    target.status.push({ type: 'stun', turns: 1 });
+    addLog(`🧊 FROZEN! ${target.e} bị đóng băng hoàn toàn 1 lượt!`, 'lelem');
+    if (pos) floatTxt(pos[0], pos[1], '🧊FROZEN!', '#00eeff');
+    return true;
+  }
+  // FIRE attack on GRASS elem = BURNING (DoT 2 turns)
+  if (newStatus === 'burn' && target.elem === 'grass') {
+    target.status = target.status.filter(s => s.type !== 'burn');
+    target.status.push({ type: 'burning', turns: 2 });
+    addLog(`🔥 BURNING! ${target.e} bị cháy liên tục 2 lượt!`, 'lelem');
+    if (pos) floatTxt(pos[0], pos[1], '🔥BURNING!', '#ff4400');
+    return true;
+  }
+  return false;
 }
 
 export function procStatus(own) {
@@ -35,6 +85,12 @@ export function procStatus(own) {
         addLog(`${u.e} 🔥bỏng −${d}HP`, 'la');
         if (pos) floatTxt(pos[0], pos[1], `🔥-${d}`, '#ff8800');
       }
+      // V6.0: burning (from elemental reaction)
+      if (s.type === 'burning') {
+        const d = 4; u.curHp -= d;
+        addLog(`${u.e} 🔥cháy liên tục −${d}HP`, 'la');
+        if (pos) floatTxt(pos[0], pos[1], `🔥-${d}`, '#ff4400');
+      }
       if (s.type === 'regen') {
         const h = 3; u.curHp = Math.min(u.hp, u.curHp + h);
         addLog(`${u.e} hồi +${h}HP`, 'lm');
@@ -42,7 +98,16 @@ export function procStatus(own) {
       }
       if (u.curHp <= 0 && u.alive) {
         u.curHp = 0; u.alive = false;
-        if (pos) G.grid[pos[0]][pos[1]] = null;
+        if (pos) {
+          const size = u.size || 1;
+          for (let dr = 0; dr < size; dr++) {
+            for (let dc = 0; dc < size; dc++) {
+              if (G.grid[pos[0] + dr]?.[pos[1] + dc] === u.id) {
+                G.grid[pos[0] + dr][pos[1] + dc] = null;
+              }
+            }
+          }
+        }
         addLog(`💥 ${u.e} chết vì trạng thái!`, 'ld');
         if (u.o === 'enemy') G.killed.p++; else G.killed.e++;
       }
@@ -54,7 +119,38 @@ export function procStatus(own) {
       const terrainHeal = TERRAIN[G.activeMap[pos[0]]?.[pos[1]]]?.heal || 0;
       if (terrainHeal > 0) u.curHp = Math.min(u.hp, u.curHp + terrainHeal);
     }
+    // V6.0: SUPPORT class — MP recovery aura for adjacent allies
+    if (u.alive && u.cls === 'SUPPORT' && pos) {
+      getAdj(pos[0], pos[1], 1).forEach(([ar, ac]) => {
+        const aid = G.grid[ar]?.[ac];
+        if (aid && G.units[aid]?.o === u.o && G.units[aid].alive) {
+          const mpGain = 2;
+          G.units[aid].curMp = Math.min(G.units[aid].mp, G.units[aid].curMp + mpGain);
+          addLog(`${u.e}💖 hỗ trợ ${G.units[aid].e} +${mpGain}MP`, 'lsk');
+        }
+      });
+    }
   });
+}
+
+// ── V6.0: Provoke — find if attacker is adjacent to a TANK with provoke ──
+
+export function getProvokeTarget(attackerUnit) {
+  const pos = findU(attackerUnit.id);
+  if (!pos) return null;
+  const adj = getAdj(pos[0], pos[1], 1);
+  for (const [ar, ac] of adj) {
+    const aid = G.grid[ar]?.[ac];
+    if (!aid) continue;
+    const u = G.units[aid];
+    if (u && u.alive && u.o !== attackerUnit.o && u.cls === 'TANK') {
+      // TANK with provoke status active, or innate provoke
+      if (u.status.some(s => s.type === 'provoke') || u.cls === 'TANK') {
+        return { unit: u, pos: [ar, ac] };
+      }
+    }
+  }
+  return null;
 }
 
 // ── Level up ─────────────────────────────────────────────────
@@ -92,9 +188,15 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
 
   const atkElem  = skillElem || atker.elem || 'neutral';
   const defElem  = defer.elem || 'neutral';
-  const elemMult = getElemMult(atkElem, defElem);
+  let elemMult = getElemMult(atkElem, defElem);
   const isStrong = elemMult > 1.1;
   const isWeak   = elemMult < 0.9;
+
+  // V6.0: WET status on target → water attacks get bonus
+  if (defer.status.some(s => s.type === 'wet') && atkElem === 'thunder') {
+    elemMult *= 1.3; // Electro-charged bonus
+    addLog(`⚡ Điện giật mục tiêu ẩm ướt! +30% DMG`, 'lelem');
+  }
 
   // V5.1 shrine boost
   const atkPos   = findU(atker.id);
@@ -120,8 +222,15 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
     if (fk) { dmg = Math.floor(dmg * 1.25); flank = true; }
   }
 
+  // V6.0: ASSASSIN class gets higher crit rate and crit damage
+  let critChance = 0.15;
+  let critMult   = 2;
+  if (atker.cls === 'ASSASSIN') {
+    critChance = 0.30;
+    critMult   = 2.5;
+  }
   let crit = false;
-  if (Math.random() < 0.15) { dmg = Math.floor(dmg * 2); crit = true; }
+  if (Math.random() < critChance) { dmg = Math.floor(dmg * critMult); crit = true; }
   dmg = Math.max(1, dmg);
 
   defer.curHp -= dmg;
@@ -165,7 +274,14 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
       floatTxt(ap[0], ap[1], `-${cd}`, '#ff8844');
       if (atker.curHp <= 0) {
         atker.curHp = 0; atker.alive = false;
-        G.grid[ap[0]][ap[1]] = null;
+        const size = atker.size || 1;
+        for (let dr = 0; dr < size; dr++) {
+          for (let dc = 0; dc < size; dc++) {
+            if (G.grid[ap[0] + dr]?.[ap[1] + dc] === atker.id) {
+              G.grid[ap[0] + dr][ap[1] + dc] = null;
+            }
+          }
+        }
         addLog(`💥 ${atker.e} bị tiêu diệt!`, 'ld');
         if (atker.o === 'enemy') G.killed.p++; else G.killed.e++;
       }
@@ -174,7 +290,16 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
 
   if (defer.curHp <= 0) {
     defer.curHp = 0; defer.alive = false;
-    if (pos) G.grid[pos[0]][pos[1]] = null;
+    if (pos) {
+      const size = defer.size || 1;
+      for (let dr = 0; dr < size; dr++) {
+        for (let dc = 0; dc < size; dc++) {
+          if (G.grid[pos[0] + dr]?.[pos[1] + dc] === defer.id) {
+            G.grid[pos[0] + dr][pos[1] + dc] = null;
+          }
+        }
+      }
+    }
     addLog(`💥 ${defer.e} ${defer.n} bị tiêu diệt!`, 'ld');
     G.score += defer.lv * 100 * Math.min(G.combo, G.comboMax);
     if (defer.o === 'enemy') G.killed.p++; else G.killed.e++;

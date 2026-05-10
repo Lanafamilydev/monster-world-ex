@@ -36,6 +36,21 @@ export function getElemMult(atkElem, defElem) {
   return 1.0;
 }
 
+// ── Monster Classes ──
+export const MONSTER_CLASSES = {
+  TANK: { icon: '🛡️', desc: 'High HP/DEF, low range, has Provoke (enemies nearby must attack them).' },
+  ASSASSIN: { icon: '🗡️', desc: 'Low HP, high Move, Critical damage bonus.' },
+  MAGE: { icon: '🔮', desc: 'High MP, AOE skills, low DEF.' },
+  SUPPORT: { icon: '💖', desc: 'Buffs/Heals, increases allies\' MP recovery.' }
+};
+
+// ── Elemental Reactions ──
+export const ELEMENTAL_REACTIONS = {
+  VAPORIZE: { desc: 'Instant 1.5x damage' },
+  FROZEN: { desc: 'Stun 1 turn' },
+  BURNING: { desc: 'Damage over time for 2 turns' }
+};
+
 // ── Status effects ──
 export const STATUS = {
   poison: { icon:'☠',  color:'#88ff44', desc:'Mất 2HP/lượt', dur:3 },
@@ -46,6 +61,9 @@ export const STATUS = {
   berserk:{ icon:'😡', color:'#ff4444', desc:'+50%ATK -50%DEF', dur:2 },
   regen:  { icon:'💚', color:'#44ff88', desc:'+3HP/lượt', dur:3 },
   speedup:{ icon:'⚡',  color:'#00e5ff', desc:'+2SPD lượt này', dur:1 },
+  wet:    { icon:'💦', color:'#00eeff', desc:'Ẩm ướt, dễ bị điện và băng', dur:2 },
+  provoke:{ icon:'💢', color:'#ff3333', desc:'Kẻ địch xung quanh phải tấn công', dur:2 },
+  burning:{ icon:'🔥', color:'#ff4400', desc:'Cháy liên tục 2 lượt', dur:2 },
 };
 
 // ── Terrain types ──
@@ -111,17 +129,17 @@ export const EVOLUTIONS = {
 // ── Unit definitions ──
 export const UDEFS = {
   // Enemies
-  head_sucker:  { n:'Head Sucker',  lv:5, hp:22, mp:10, atk:9,  def:5, spd:2, e:'💀', o:'enemy',  elem:'dark',    sk:['drain','poison_bite'],    desc:'Quái đầu lâu hút sinh khí' },
-  ganbo:        { n:'Ganbo',        lv:5, hp:25, mp:8,  atk:8,  def:8, spd:2, e:'🗿', o:'enemy',  elem:'neutral', sk:['war_cry','barrier'],       desc:'Khổng lồ đá phòng thủ tối cao' },
-  cobrada:      { n:'Cobrada',      lv:4, hp:16, mp:12, atk:10, def:3, spd:4, e:'🐍', o:'enemy',  elem:'grass',   sk:['poison_bite','ice_blast'],  desc:'Rắn hổ mang tốc độ và độc' },
-  dinosaur_wing:{ n:'Dino Wing',    lv:5, hp:20, mp:10, atk:11, def:4, spd:3, e:'🐉', o:'enemy',  elem:'fire',    sk:['flame_breath','thunder'],    desc:'Long thần hỏa lực mạnh nhất' },
-  docra:        { n:'Docrā',        lv:4, hp:18, mp:9,  atk:8,  def:7, spd:2, e:'👹', o:'enemy',  elem:'dark',    sk:['barrier','heal'],            desc:'Quỷ đầu sừng dẻo dai bất bại' },
+  head_sucker:  { n:'Head Sucker',  lv:5, hp:22, mp:10, atk:9,  def:5, spd:2, e:'💀', o:'enemy',  elem:'dark',    sk:['drain','poison_bite'],    desc:'Quái đầu lâu hút sinh khí', cls:'ASSASSIN' },
+  ganbo:        { n:'Ganbo',        lv:5, hp:25, mp:8,  atk:8,  def:8, spd:2, e:'🗿', o:'enemy',  elem:'neutral', sk:['war_cry','barrier'],       desc:'Khổng lồ đá phòng thủ tối cao', cls:'TANK' },
+  cobrada:      { n:'Cobrada',      lv:4, hp:16, mp:12, atk:10, def:3, spd:4, e:'🐍', o:'enemy',  elem:'grass',   sk:['poison_bite','ice_blast'],  desc:'Rắn hổ mang tốc độ và độc', cls:'ASSASSIN' },
+  dinosaur_wing:{ n:'Dino Wing',    lv:5, hp:20, mp:10, atk:11, def:4, spd:3, e:'🐉', o:'enemy',  elem:'fire',    sk:['flame_breath','thunder'],    desc:'Long thần hỏa lực mạnh nhất', cls:'MAGE' },
+  docra:        { n:'Docrā',        lv:4, hp:18, mp:9,  atk:8,  def:7, spd:2, e:'👹', o:'enemy',  elem:'dark',    sk:['barrier','heal'],            desc:'Quỷ đầu sừng dẻo dai bất bại', cls:'SUPPORT' },
   // Players
-  trigan:       { n:'Trigan',       lv:2, hp:10, mp:14, atk:5,  def:2, spd:5, e:'🦅', o:'player', elem:'fire',    sk:['thunder','teleport'],        desc:'Đại bàng lửa — Tiến hóa đa nhánh LV10' },
-  great_bar:    { n:'Great Bar',    lv:4, hp:16, mp:10, atk:8,  def:6, spd:2, e:'🛡️',o:'player', elem:'light',   sk:['barrier','war_cry'],          desc:'Chiến binh khiên — Tiến hóa đa nhánh LV10' },
-  eye_mouse:    { n:'Eye Mouse',    lv:1, hp:7,  mp:10, atk:3,  def:1, spd:6, e:'👁️',o:'player', elem:'dark',    sk:['teleport','poison_bite'],     desc:'Chuột mắt — Tiến hóa đa nhánh LV10' },
-  flower_man:   { n:'Flower Man',   lv:1, hp:9,  mp:12, atk:4,  def:2, spd:3, e:'🌺', o:'player', elem:'grass',   sk:['heal','poison_bite'],         desc:'Hoa quỷ — Tiến hóa đa nhánh LV10' },
-  devil_castle: { n:'D.Castle',     lv:1, hp:12, mp:8,  atk:3,  def:6, spd:1, e:'🏯', o:'player', elem:'dark',    sk:['barrier','ice_blast'],        desc:'Lâu đài quỷ — Tiến hóa đa nhánh LV10' },
+  trigan:       { n:'Trigan',       lv:2, hp:10, mp:14, atk:5,  def:2, spd:5, e:'🦅', o:'player', elem:'fire',    sk:['thunder','teleport'],        desc:'Đại bàng lửa — Tiến hóa đa nhánh LV10', cls:'ASSASSIN' },
+  great_bar:    { n:'Great Bar',    lv:4, hp:16, mp:10, atk:8,  def:6, spd:2, e:'🛡️',o:'player', elem:'light',   sk:['barrier','war_cry'],          desc:'Chiến binh khiên — Tiến hóa đa nhánh LV10', cls:'TANK' },
+  eye_mouse:    { n:'Eye Mouse',    lv:1, hp:7,  mp:10, atk:3,  def:1, spd:6, e:'👁️',o:'player', elem:'dark',    sk:['teleport','poison_bite'],     desc:'Chuột mắt — Tiến hóa đa nhánh LV10', cls:'MAGE' },
+  flower_man:   { n:'Flower Man',   lv:1, hp:9,  mp:12, atk:4,  def:2, spd:3, e:'🌺', o:'player', elem:'grass',   sk:['heal','poison_bite'],         desc:'Hoa quỷ — Tiến hóa đa nhánh LV10', cls:'SUPPORT' },
+  devil_castle: { n:'D.Castle',     lv:1, hp:12, mp:8,  atk:3,  def:6, spd:1, e:'🏯', o:'player', elem:'dark',    sk:['barrier','ice_blast'],        desc:'Lâu đài quỷ — Tiến hóa đa nhánh LV10', cls:'TANK' },
 };
 
 // ── Gacha pool ──

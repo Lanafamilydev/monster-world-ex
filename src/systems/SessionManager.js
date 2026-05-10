@@ -121,11 +121,6 @@ export function initBattle() {
     const pos = enemyPositions[idx];
     let r = pos[0], c = pos[1];
 
-    // Ensure spawn cell is passable
-    if (G.activeMap[r] && (G.activeMap[r][c] === 'water' || G.activeMap[r][c] === 'mountain')) {
-      G.activeMap[r][c] = 'plains';
-    }
-
     const uid = def.id || `enemy_${idx}`;
     G.units[uid] = {
       ...def, id: uid,
@@ -134,7 +129,21 @@ export function initBattle() {
       xp: 0, status: [], evolved: false, evoReady: false,
       o: 'enemy',
     };
-    G.grid[r][c] = uid;
+    
+    // V6.0: Multi-cell placement for large units (e.g. 2x2 boss)
+    const size = def.size || 1;
+    for (let dr = 0; dr < size; dr++) {
+      for (let dc = 0; dc < size; dc++) {
+        const nr = r + dr, nc = c + dc;
+        if (G.grid[nr] !== undefined && G.grid[nr][nc] !== undefined) {
+          G.grid[nr][nc] = uid;
+          // Ensure all occupied cells are passable
+          if (G.activeMap[nr] && (G.activeMap[nr][nc] === 'water' || G.activeMap[nr][nc] === 'mountain')) {
+            G.activeMap[nr][nc] = 'plains';
+          }
+        }
+      }
+    }
   });
 
   // ── Place player units from roster (freshly loaded) ──

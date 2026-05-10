@@ -536,6 +536,50 @@ body{background:var(--dark);font-family:'Rajdhani',sans-serif;color:#ccc;
 .erl-skip{font-size:10px;color:#444;cursor:pointer;padding:10px 20px;border:1px solid #333;border-radius:8px;transition:all .2s;min-height:40px;touch-action:manipulation}
 .erl-skip:hover{color:#666;border-color:#555}
 
+/* ══════════════════════════════════════════════
+   V6.0 TACTICAL EXPANSION STYLES
+══════════════════════════════════════════════ */
+.ccls {
+  position: absolute;
+  top: 1px;
+  right: 12px;
+  font-size: 8px;
+  z-index: 4;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+  pointer-events: none;
+}
+.uc-cls {
+  font-size: 10px;
+  margin-right: 4px;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));
+}
+.u-giant-boss {
+  z-index: 10 !important;
+  pointer-events: none;
+}
+.u-giant-boss .ue {
+  font-size: 3.5em !important;
+  transform: translate(50%, 50%);
+  filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+}
+.giant-boss-part {
+  background: rgba(224,48,48,.05) !important;
+  box-shadow: inset 0 0 10px rgba(224,48,48,.1);
+}
+.cst [title="wet"] { color: var(--water); text-shadow: 0 0 4px var(--water); }
+.cst [title="burn"] { color: var(--fire); text-shadow: 0 0 4px var(--fire); }
+.cst [title="frozen"] { color: var(--cyan); text-shadow: 0 0 4px var(--cyan); }
+.cst [title="burning"] { animation: burning-sh 0.8s infinite alternate; }
+@keyframes burning-sh {
+  from { filter: drop-shadow(0 0 2px #ff4400); transform: scale(1); }
+  to { filter: drop-shadow(0 0 6px #ffbb00); transform: scale(1.1); }
+}
+.cst [title="provoke"] { color: var(--gold); text-shadow: 0 0 6px var(--gold); animation: provoke-sh 1s infinite; }
+@keyframes provoke-sh { 
+  0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; }
+}
+
 /* ── Mobile-only elements hidden at ALL viewport sizes by default ── */
 #mob-nav,#mob-log-btn,#mob-log-panel,#mob-ud-overlay,
 #mob-hud,#mob-unit-strip,#mob-actions{display:none}

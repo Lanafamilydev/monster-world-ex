@@ -23,6 +23,8 @@ const ENEMY_TEMPLATES = {
   thunder_lord:  { n:'Thunder Lord',  lv:8, hp:22, mp:16, atk:14, def:5, spd:5, e:'⚡', o:'enemy', elem:'thunder', sk:['thunder','thunder_wave'],desc:'Chúa sét tốc độ ánh sáng tuyệt đỉnh' },
   vine_queen:    { n:'Vine Queen',    lv:7, hp:24, mp:14, atk:11, def:7, spd:3, e:'🌿', o:'enemy', elem:'grass',   sk:['vine_trap','poison_bite'],desc:'Nữ hoàng dây leo độc tố nguy hiểm' },
   dark_emperor:  { n:'Dark Emperor',  lv:9, hp:26, mp:16, atk:15, def:8, spd:3, e:'👑', o:'enemy', elem:'dark',    sk:['ulti_yugi','drain'],     desc:'Hoàng đế bóng tối quyền lực tuyệt đỉnh' },
+  // V6.0: Giant Bosses
+  obelisk:       { n:'Obelisk',       lv:15, hp:80, mp:20, atk:25, def:15,spd:2, e:'🔷', o:'enemy', elem:'neutral',sk:['stomp','barrier'],     desc:'Vị thần khổng lồ với sức mạnh vô song', size: 2 },
 };
 
 /** Scale a unit's stats by a multiplier */
@@ -71,6 +73,8 @@ function spawnCampaignEnemies(floor, powerScore) {
     ['dark_emperor','ice_golem','thunder_lord','vine_queen','shadow_wraith'],
     // Floor 6+
     ['dark_emperor','fire_titan','thunder_lord','vine_queen','ice_golem'],
+    // Floor 7 (Giant Boss)
+    ['obelisk'],
   ];
 
   const idx = Math.min(floor - 1, compositions.length - 1);
@@ -98,6 +102,9 @@ function spawnEndlessEnemies(floor, powerScore) {
   if      (floor <= 3)  pool = basicPool;
   else if (floor <= 7)  pool = [...basicPool, ...midPool];
   else                  pool = [...midPool, ...elitePool, ...elitePool]; // weight elites
+
+  // V6.0: Occasionally include a giant boss in elite floors
+  if (floor >= 8 && Math.random() < 0.2) pool.push('obelisk');
 
   // Pick 5 random from pool (allow repeats for higher floors)
   const count = Math.min(5, 3 + Math.floor(floor / 3));
