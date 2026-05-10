@@ -174,6 +174,15 @@ export function renderBoard() {
             }
 
             // V6.0: Enhanced status icons
+            if (u.status.length) {
+              const si = document.createElement('div');
+              si.className = 'cst';
+              u.status.forEach(s => {
+                const ico = document.createElement('span');
+                ico.textContent = STATUS[s.type]?.icon || '';
+                ico.title = s.type;
+                si.appendChild(ico);
+              });
               uw.appendChild(si);
             }
 
@@ -841,7 +850,7 @@ export function showSmartInspect(u, e) {
     u.status.forEach(s => {
       const sDef = STATUS[s.type];
       if (sDef) {
-        html += `<div style="color:${sDef.color};font-size:10px;margin-bottom:2px">${sDef.icon} ${sDef.desc} (${s.dur}L)</div>`;
+        html += `<div style="color:${sDef.color};font-size:10px;margin-bottom:2px">${sDef.icon} ${sDef.desc} (${s.turns}L)</div>`;
       }
     });
   }
