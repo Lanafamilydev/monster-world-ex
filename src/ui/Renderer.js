@@ -174,12 +174,18 @@ export function renderBoard() {
             }
 
             // V6.0: Enhanced status icons
-            if (u.status.length) {
-              const si = document.createElement('div');
-              si.className = 'cst';
-              si.textContent = u.status.slice(0,3).map(s => STATUS[s.type]?.icon||'').join('');
               uw.appendChild(si);
             }
+
+            // V6.0 Smart Inspect
+            uw.onmouseenter = (e) => showSmartInspect(u, e);
+            uw.onmousemove  = (e) => showSmartInspect(u, e);
+            uw.onmouseleave = () => hideSmartInspect();
+            uw.ontouchstart = (e) => {
+              // On mobile, touch can trigger inspect
+              if (e.touches.length > 0) showSmartInspect(u, e.touches[0]);
+            };
+
             cell.appendChild(uw);
           }
 
@@ -819,6 +825,41 @@ export function toggleMobLog() {
 
 function _abbrev(str, maxLen) {
   return str.length <= maxLen ? str : str.slice(0, maxLen-1) + '…';
+}
+
+/** Show floating tooltip for status/weather */
+export function showSmartInspect(u, e) {
+  const tip = document.getElementById('inspect-tip');
+  if (!tip) return;
+  
+  let html = `<div style="color:var(--gold);font-weight:bold">${u.n} [LV${u.lv}]</div>`;
+  html += `<div style="font-size:9px;margin-top:4px;color:#888">${u.curHp}/${u.hp} HP · ${u.curMp}/${u.mp} MP</div>`;
+  html += `<div style="font-size:9px;color:#aaa">ATK:${u.atk} DEF:${u.def} SPD:${u.spd}</div>`;
+  
+  if (u.status && u.status.length) {
+    html += '<hr style="border:0;border-top:1px solid #333;margin:6px 0">';
+    u.status.forEach(s => {
+      const sDef = STATUS[s.type];
+      if (sDef) {
+        html += `<div style="color:${sDef.color};font-size:10px;margin-bottom:2px">${sDef.icon} ${sDef.desc} (${s.dur}L)</div>`;
+      }
+    });
+  }
+
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  tip.style.left = (e.clientX + 15) + 'px';
+  tip.style.top  = (e.clientY + 15) + 'px';
+  
+  // Keep on screen
+  const rect = tip.getBoundingClientRect();
+  if (rect.right > window.innerWidth) tip.style.left = (e.clientX - rect.width - 15) + 'px';
+  if (rect.bottom > window.innerHeight) tip.style.top = (e.clientY - rect.height - 15) + 'px';
+}
+
+export function hideSmartInspect() {
+  const tip = document.getElementById('inspect-tip');
+  if (tip) tip.style.display = 'none';
 }
 
 function _buildDetailHTML(u) {

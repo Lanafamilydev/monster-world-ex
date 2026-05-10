@@ -11,6 +11,9 @@
 </head>
 <body>
 
+  <div id="loading" class="overlay show"> <div class="loader"></div> </div>
+  <div id="inspect-tip" style="display:none; position:fixed; z-index:9999; background:rgba(0,0,0,0.9); color:#fff; padding:10px; border:1px solid var(--gold); border-radius:8px; font-size:11px; pointer-events:none; max-width:200px; box-shadow:0 0 15px rgba(0,0,0,0.5);"></div>
+  
 <!-- GLOBAL HEADER -->
 <div id="g-hdr">
   <div id="g-title">⚡ MW<span class="title-full"> V5.1</span></div>
@@ -284,6 +287,14 @@
       </div>
     </div>
     <div class="acc-section">
+      <h3>💾 DỮ LIỆU</h3>
+      <div style="font-size:10px;color:#555;margin-bottom:8px">Xuất/Nhập dữ liệu (Base64) để chơi trên thiết bị khác.</div>
+      <div style="display:flex;gap:8px">
+        <button class="pb pb-end" style="font-size:9px" onclick="exportData()">📤 XUẤT (EXPORT)</button>
+        <button class="pb pb-end" style="font-size:9px" onclick="importData()">📥 NHẬP (IMPORT)</button>
+      </div>
+    </div>
+    <div class="acc-section">
       <h3>⚠ NGUY HIỂM</h3>
       <div style="font-size:10px;color:#555;margin-bottom:8px">Xóa toàn bộ dữ liệu!</div>
       <button class="pb" style="background:rgba(224,48,48,.1);border:1px solid var(--red);color:var(--red);font-size:9px" onclick="if(confirm('Xóa hết?')){localStorage.clear();location.reload()}">🗑 XÓA &amp; CHƠI LẠI</button>
@@ -458,6 +469,36 @@
   <button class="mnb"     id="mn-care"    onclick="switchTab('care')"><span class="mnb-icon">💚</span><span class="mnb-label">CHĂM</span></button>
   <button class="mnb"     id="mn-account" onclick="switchTab('account')"><span class="mnb-icon">👤</span><span class="mnb-label">TÀI K.</span></button>
 </nav>
+
+<!-- ★ CODEX BUTTON ★ -->
+<button id="codex-btn" onclick="toggleCodex()">📖</button>
+<div id="codex-overlay" class="overlay">
+  <div class="codex-content">
+    <div class="codex-header">
+      <h2>SỔ TAY CHIẾN THUẬT</h2>
+      <button onclick="toggleCodex()">✕</button>
+    </div>
+    <div class="codex-body">
+      <h3>1. Hệ Thống Nguyên Tố</h3>
+      <div class="codex-elem-grid">
+        <div style="color:var(--fire)">🔥 Hỏa > 🌿 Mộc</div>
+        <div style="color:var(--grass)">🌿 Mộc > 💧 Thủy</div>
+        <div style="color:var(--water)">💧 Thủy > 🔥 Hỏa</div>
+        <div style="color:var(--thunder-e)">⚡ Lôi > 💧 Thủy</div>
+        <div style="color:var(--elight)">✨ Quang <> 🌑 Ám</div>
+      </div>
+      <h3>2. Phản Ứng Nguyên Tố</h3>
+      <p>• <b>Bốc Hơi (Water + Fire):</b> Gây 1.5x sát thương lập tức.</p>
+      <p>• <b>Đóng Băng (Water + Ice):</b> Làm choáng mục tiêu 1 lượt.</p>
+      <p>• <b>Cháy Lớn (Fire + Grass):</b> Gây sát thương theo thời gian (2 lượt).</p>
+      <h3>3. Hệ Thống Cổ Ngọc</h3>
+      <p>• <b>ATK%:</b> Tăng sức mạnh tấn công cơ bản.</p>
+      <p>• <b>CRIT%:</b> Tăng tỷ lệ gây sát thương gấp đôi.</p>
+      <p>• <b>Hút Máu:</b> Hồi HP dựa trên lượng sát thương gây ra.</p>
+      <p>• <b>Tốc Độ:</b> Tăng phạm vi di chuyển trên bản đồ.</p>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="src/main.js"></script>
 </body>

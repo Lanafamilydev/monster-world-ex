@@ -2,7 +2,7 @@
 // Monster World V5.1 — Main Entry Point (responsive fix)
 // ═══════════════════════════════════════════════════════════════
 
-import { P, loadPlayer, initFreshPlayer, updateGlobalHeader } from './core/playerState.js';
+import { P, loadPlayer, initFreshPlayer, updateGlobalHeader, exportSave, importSave } from './core/playerState.js';
 import { switchTab, renderAccountTab, renderInventoryDisplay } from './ui/Tabs.js';
 import { renderItemShop, openGacha, closeGachaResult } from './features/Shop.js';
 import { renderRosterTab, renderPokedex } from './features/Roster.js';
@@ -11,6 +11,7 @@ import { showModeSelect, hideModeSelect, startSession, dismissEndlessReward } fr
 import { endTurn, cancelAct } from './systems/TurnSystem.js';
 import { activateUlti, closeMobUd, closeMobDrawer, initDrawerBindings, toggleMobLog, calcBoardSize, isMobile } from './ui/Renderer.js';
 import { createAccount, renamePlayer } from './core/playerState.js';
+import { toggleCodex } from './ui/Codex.js';
 
 // ── Expose all functions needed by HTML onclick ───────────────
 window.switchTab            = switchTab;
@@ -31,6 +32,15 @@ window.renamePlayer         = renamePlayer;
 window.closeMobUd           = closeMobUd;
 window.closeMobDrawer       = closeMobDrawer;
 window.toggleMobLog         = toggleMobLog;
+window.toggleCodex          = toggleCodex;
+window.exportData           = () => {
+  const code = exportSave();
+  prompt('Copy mã lưu trữ của bạn:', code);
+};
+window.importData           = async () => {
+  const code = prompt('Dán mã lưu trữ (Base64) vào đây:');
+  if (code) await importSave(code);
+};
 
 window.closeGameOverGoShop = () => {
   document.getElementById('go-overlay')?.classList.remove('show');

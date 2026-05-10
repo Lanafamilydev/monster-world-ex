@@ -691,6 +691,53 @@ body{background:var(--dark);font-family:'Rajdhani',sans-serif;color:#ccc;
   0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; }
 }
 
+/* ── Codex Button ── */
+#codex-btn {
+  position: fixed;
+  top: 60px;
+  right: 15px;
+  width: 44px;
+  height: 44px;
+  background: rgba(4,4,15,0.85);
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  color: var(--gold);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 0 15px var(--gg);
+  transition: all 0.2s;
+}
+#codex-btn:hover { transform: scale(1.1); box-shadow: 0 0 25px var(--gold); }
+
+/* ── Codex Overlay ── */
+.codex-content {
+  background: #0a0a1a;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  padding: 20px;
+  color: #ccc;
+  font-family: 'Rajdhani', sans-serif;
+}
+.codex-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #222;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+}
+.codex-header h2 { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: var(--gold); }
+.codex-header button { background: none; border: none; color: #555; cursor: pointer; font-size: 20px; }
+.codex-body h3 { font-size: 14px; color: var(--cyan); margin: 15px 0 8px; border-left: 3px solid var(--cyan); padding-left: 8px; }
+.codex-body p { font-size: 12px; margin-bottom: 6px; color: #aaa; }
+.codex-elem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; margin-bottom: 10px; }
+
 /* ── Talent Tree ── */
 .talent-grid {
   display: grid;

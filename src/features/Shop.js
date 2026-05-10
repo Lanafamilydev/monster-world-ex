@@ -76,10 +76,18 @@ export function openGacha(type) {
 
   P.gold -= cost;
   const isNew = addToCollection(monster.id);
-  // addToCollection calls savePlayer internally
+  
+  // V6.0: Duplicate System
+  let dustGain = 0;
+  if (!isNew) {
+    const dustMap = { C: 5, B: 15, A: 40, S: 100 };
+    dustGain = dustMap[pickedTier] || 0;
+    P.inventory.magic_dust = (P.inventory.magic_dust || 0) + dustGain;
+  }
+
   updateGlobalHeader();
   renderPokedex();
-  showGachaResult(monster, pickedTier, isNew);
+  showGachaResult(monster, pickedTier, isNew, dustGain);
 }
 
 /** Show the gacha result modal */
@@ -99,7 +107,7 @@ function showGachaResult(monster, tier, isNew) {
     </div>
     ${isNew
       ? '<div class="gr-new">✨ QUÁI MỚI! Đã thêm vào Pokedex</div>'
-      : '<div style="font-size:9px;color:#555;margin-top:8px">Đã sở hữu — Bộ sưu tập cập nhật</div>'}`;
+      : `<div style="font-size:9px;color:var(--gold);margin-top:8px">TRÙNG LẶP! +${dustGain} ✨ Bụi Ma Thuật</div>`}`;
   document.getElementById('gacha-result')?.classList.add('show');
 }
 
