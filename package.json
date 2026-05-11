@@ -1,0 +1,14 @@
+{
+  "name": "monster-world-ex",
+  "version": "1.0.0",
+  "description": "Monster World EX",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

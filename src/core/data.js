@@ -242,8 +242,6 @@ export const GACHA_POOL = [
   { id:'giant_soldier',n:'Giant Soldier',     e:'🛡️', t:'B', hp:24, mp:8,  atk:10, def:14,spd:2, elem:'light',   sk:['barrier'],     desc:'Cự binh đá phòng thủ thép' },
   { id:'gemini_elf',   n:'Gemini Elf',        e:'👯‍♀️', t:'A', hp:19, mp:14, atk:16, def:5, spd:6, elem:'neutral', sk:['stomp'],       desc:'Cặp song sinh tiên tộc' },
   { id:'summoned_sk',  n:'Summoned Skull',    e:'💀', t:'S', hp:26, mp:20, atk:22, def:10,spd:5, elem:'thunder', sk:['thunder'],     desc:'Ác quỷ sấm sét triệu hồi' },
-];
-
   { id:'blue_eyes',   n:'Blue-Eyes Dragon',   e:'🐲', t:'S', hp:30, mp:14, atk:18, def:8, spd:3, elem:'water',   sk:['ice_blast','thunder'],    desc:'Rồng mắt xanh huyền thoại' },
   { id:'dark_mag_g',  n:'Dark Magician Girl', e:'🌟', t:'S', hp:22, mp:20, atk:16, def:5, spd:5, elem:'dark',    sk:['ulti_dark','drain'],      desc:'Pháp sư nữ ma thuật tối thượng' },
   { id:'thousand_d',  n:'Thousand Dragon',    e:'🐉', t:'S', hp:28, mp:14, atk:20, def:7, spd:2, elem:'fire',    sk:['flame_breath','ulti_trigan'],desc:'Nghìn long thần thú huyền thoại' },

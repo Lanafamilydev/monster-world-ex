@@ -1,6 +1,4 @@
 // ═══════════════════════════════════════════════════════════════
-// Monster World V5.1 — Main Entry Point (responsive fix)
-// ═══════════════════════════════════════════════════════════════
 
 import { P, loadPlayer, initFreshPlayer, updateGlobalHeader, exportSave, importSave } from './core/playerState.js';
 import { switchTab, renderAccountTab, renderInventoryDisplay } from './ui/Tabs.js';
@@ -105,32 +103,55 @@ if (window.visualViewport) {
 
 // Tap outside overlay to close it
 document.addEventListener('click', e => {
+  // Mobile unit detail overlay
   const ov = document.getElementById('mob-ud-overlay');
   if (ov?.classList.contains('open') && !ov.contains(e.target)) closeMobUd();
+  
+  // Codex overlay
+  const codex = document.getElementById('codex-overlay');
+  if (codex?.classList.contains('show') && !codex.querySelector('.codex-content')?.contains(e.target) && !e.target.closest('#codex-btn')) {
+    toggleCodex();
+  }
 }, { capture: false });
 
 // ── Boot ──────────────────────────────────────────────────────
-(function init() {
-  const hasSave = loadPlayer();
+async function init() {
+  try {
+    const hasSave = await loadPlayer();
 
-  if (hasSave) {
-    updateGlobalHeader();
-    renderItemShop();
-    renderRosterTab();
-    renderPokedex();
-  } else {
-    initFreshPlayer('Yugi');
-    document.getElementById('name-modal')?.classList.add('show');
+    if (hasSave) {
+      updateGlobalHeader();
+      renderItemShop();
+      renderRosterTab();
+      renderPokedex();
+    } else {
+      initFreshPlayer('Yugi');
+      document.getElementById('name-modal')?.classList.add('show');
+    }
+
+    // Guarantee correct body padding at startup
+    document.body.style.paddingBottom = window.innerWidth >= 768 ? '0' : '';
+
+    switchTab('battle');
+    document.body.classList.add('tab-battle'); // initial state
+    setTimeout(() => showModeSelect(), 300);
+    calcBoardSize();
+
+    // Bind drawer ctrl buttons once — ES-module safe, no onclick= needed
+    initDrawerBindings();
+  } catch (err) {
+    console.error('Initialization failed:', err);
+  } finally {
+    // Hide loading screen
+    const loading = document.getElementById('loading');
+    if (loading) {
+      loading.style.opacity = '0';
+      setTimeout(() => {
+        loading.classList.remove('show');
+        loading.style.opacity = '';
+      }, 400);
+    }
   }
+}
 
-  // Guarantee correct body padding at startup
-  document.body.style.paddingBottom = window.innerWidth >= 768 ? '0' : '';
-
-  switchTab('battle');
-  document.body.classList.add('tab-battle'); // initial state
-  setTimeout(() => showModeSelect(), 300);
-  calcBoardSize();
-
-  // Bind drawer ctrl buttons once — ES-module safe, no onclick= needed
-  initDrawerBindings();
-})();
+init();

@@ -4,9 +4,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { SAVE_KEY, DEFAULT_PLAYER } from './data.js';
-
-// Mutable player object — imported by all modules
-export const P = {};
+// Mutable player object — initialized with defaults, merged on load
+export const P = { ...DEFAULT_PLAYER };
 
 // ── IndexedDB Wrapper ──
 const DB_NAME = 'MonsterWorldDB';

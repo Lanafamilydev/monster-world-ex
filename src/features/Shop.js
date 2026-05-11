@@ -91,7 +91,7 @@ export function openGacha(type) {
 }
 
 /** Show the gacha result modal */
-function showGachaResult(monster, tier, isNew) {
+function showGachaResult(monster, tier, isNew, dustGain) {
   const el  = document.getElementById('gacha-res-card');
   const clr = RARITY_CLR[tier];
   if (!el) return;

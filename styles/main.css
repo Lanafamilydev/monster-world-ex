@@ -15,6 +15,8 @@
   --rC:#888;--rB:#4499ff;--rA:#ff8800;--rS:#ff44ff;
   --fire:#ff6622;--water:#4488ff;--grass:#44bb44;
   --thunder-e:#ffdd00;--edark:#aa44ff;--elight:#ffeeaa;
+  /* Overlay colors */
+  --ov-bg: rgba(0,0,0,0.85);
   /* Mobile layout token */
   --mob-nav-h: 56px;
   --mob-hdr-h: 36px;
@@ -27,6 +29,35 @@ body{background:var(--dark);font-family:'Rajdhani',sans-serif;color:#ccc;
   radial-gradient(ellipse at 85% 85%,rgba(180,20,40,.15) 0%,transparent 45%)}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:#222;border-radius:2px}
+
+/* ══════════════════════════════════════════════
+   GLOBAL OVERLAYS & LOADER
+   ══════════════════════════════════════════════ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--ov-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.overlay.show { display: flex; }
+
+.loader {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(245,200,66,0.1);
+  border-radius: 50%;
+  border-top-color: var(--gold);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 /* ══════════════════════════════════════════════
    GLOBAL HEADER
