@@ -120,9 +120,8 @@ export function openRuneGacha() {
   const cost = 300;
   if (P.gold < cost) { toast(`Không đủ Vàng! Cần ${cost}💰`); return; }
 
-  P.gold -= cost;
-  
   import('../features/Runes.js').then(({ RuneSystem }) => {
+    P.gold -= cost;
     const roll = Math.random() * 100;
     const rarity = roll < 10 ? 'epic' : roll < 40 ? 'rare' : 'common';
     const rune = RuneSystem.generateRune(rarity);

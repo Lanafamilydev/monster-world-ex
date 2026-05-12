@@ -47,6 +47,11 @@ export class FusionSystem {
     const lv2 = P.monsterLevels[p2Id] || 1;
 
     // Check requirements
+    if (idx1 === idx2) {
+      toast('Phải chọn hai quái thú khác nhau!');
+      return false;
+    }
+
     if (lv1 < 10 || lv2 < 10) {
       toast('Cần cả 2 quái đạt LV10+ để Dung Hợp!');
       return false;

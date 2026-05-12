@@ -79,19 +79,25 @@ export function renderLevelUpList() {
 }
 
 export function manualLevelUp(id, cost) {
-  if (P.gold < cost) {
-    toast('Không đủ vàng!');
-    return;
-  }
-  
-  P.gold -= cost;
-  
   if (!P.monsterLevels) P.monsterLevels = {};
   if (!P.monsterLevels[id]) {
     const def = getDefById(id);
     P.monsterLevels[id] = { lv: def?.lv || 1, xp: 0, evolved: false, evoPathId: null };
   }
+
+  const currentLv = P.monsterLevels[id].lv;
+  if (currentLv >= 20) {
+    toast('Đã đạt cấp tối đa!');
+    return;
+  }
+
+  const actualCost = currentLv * 100;
+  if (P.gold < actualCost) {
+    toast('Không đủ vàng!');
+    return;
+  }
   
+  P.gold -= actualCost;
   P.monsterLevels[id].lv += 1;
   const newLv = P.monsterLevels[id].lv;
   

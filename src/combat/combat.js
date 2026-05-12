@@ -26,9 +26,10 @@ export function checkElementalReaction(target, newStatus) {
   const pos = findU(target.id);
   if (newStatus === 'burn' && target.status.some(s => s.type === 'wet')) {
     target.status = target.status.filter(s => s.type !== 'wet');
-    const vapDmg = Math.max(1, Math.floor(target.hp * 0.15));
+    // Capped at 25 damage so it doesn't instantly kill bosses
+    const vapDmg = Math.max(1, Math.min(25, Math.floor(target.hp * 0.15)));
     target.curHp -= vapDmg;
-    addLog(`💨 VAPORIZE! ${target.e} −${vapDmg}HP (1.5x)`, 'lelem');
+    addLog(`💨 VAPORIZE! ${target.e} −${vapDmg}HP`, 'lelem');
     if (pos) {
       floatTxt(pos[0], pos[1], `VAPORIZE -${vapDmg}`, 'reaction', '#ffaa00');
       screenShake('heavy');
@@ -103,8 +104,7 @@ export function procStatus(own) {
         if (pos) floatTxt(pos[0], pos[1], `-${d}`, '#88ff44');
       }
       if (s.type === 'burn') {
-        const d = 3; u.curHp -= d;
-        if (u.def > 1) u.def = Math.max(1, u.def - 1);
+        const d = 4; u.curHp -= d;
         addLog(`${u.e} 🔥bỏng −${d}HP`, 'la');
         if (pos) floatTxt(pos[0], pos[1], `🔥-${d}`, '#ff8800');
       }
@@ -180,13 +180,17 @@ export function getProvokeTarget(attackerUnit) {
 
 export function checkLevelUp(u) {
   if (u.o !== 'player' || u.lv >= 20) return;
-  const need = u.lv * 30;
-  if (u.xp < need) return;
-  u.lv++; u.xp -= need;
-  u.hp += 3; u.atk += 1; u.def += 1;
-  u.curHp = Math.min(u.hp, u.curHp + 5);
-  u.curMp = Math.min(u.mp, u.curMp + 3);
-  if (u.lv >= 10 && EVOLUTIONS[u.id] && !u.evolved) u.evoReady = true;
+  let leveledUp = false;
+  while (u.xp >= u.lv * 30 && u.lv < 20) {
+    const need = u.lv * 30;
+    u.lv++; u.xp -= need;
+    u.hp += 3; u.atk += 1; u.def += 1;
+    u.curHp = Math.min(u.hp, u.curHp + 5);
+    u.curMp = Math.min(u.mp, u.curMp + 3);
+    if (u.lv >= 10 && EVOLUTIONS[u.id] && !u.evolved) u.evoReady = true;
+    leveledUp = true;
+  }
+  if (!leveledUp) return;
   persistMonsterLevel(u);
   savePlayer();
   const evoMsg = (u.evoReady && !u.evolved) ? ' ✨ EVO sẵn sàng!' : '';
@@ -229,9 +233,9 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
 
   const eAtk = Math.floor(atker.atk * (bsk ? 1.5 : 1) * shrineBoost);
   const eDef = defer.def + td.def + (shld ? 5 : 0);
-  let dmg = overDmg !== null
-    ? overDmg
-    : Math.max(1, eAtk - eDef + Math.floor(Math.random() * 5) - 2);
+  
+  let baseDmg = overDmg !== null ? overDmg : eAtk;
+  let dmg = Math.max(1, baseDmg - eDef + Math.floor(Math.random() * 5) - 2);
 
   dmg = Math.floor(dmg * elemMult);
 

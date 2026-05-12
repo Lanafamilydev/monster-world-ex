@@ -6,7 +6,7 @@ import { G } from '../core/gameState.js';
 import { SKILLS, getElemMult } from '../core/data.js';
 import { addLog, addLogSep, hideCancel } from '../ui/UIHelpers.js';
 import { render, renderUnitDetail } from '../ui/Renderer.js';
-import { findU, getReach, getAtkbl, getSkTgts } from '../combat/movement.js';
+import { findU, getReach, getAtkbl, getSkTgts, getAOEPattern, getAdj } from '../combat/movement.js';
 import {
   procStatus, doAttack, doSkillAtk, applyStatus,
   checkCapture, checkSpecialTile, checkGameOver,
@@ -87,8 +87,17 @@ function smartAIAct(u) {
           if (tgts.length) {
             const best = isHighLevel ? selectBestTarget(u, tgts) : tgts[Math.floor(Math.random()*tgts.length)];
             if (best) {
-              const tid = G.grid[best[0]]?.[best[1]];
-              if (tid && G.units[tid]?.o === 'player') doSkillAtk(u, G.units[tid], best[0], best[1], sk);
+              const tr = best[0], tc = best[1];
+              const targets = sk.pattern 
+                ? getAOEPattern(tr, tc, sk.pattern, sk.r) 
+                : (sk.aoe ? getAdj(tr, tc, 1).concat([[tr, tc]]) : [[tr, tc]]);
+                
+              targets.forEach(([ar, ac]) => {
+                const tid = G.grid[ar]?.[ac];
+                if (tid && G.units[tid]?.alive && G.units[tid].o !== u.o) {
+                  doSkillAtk(u, G.units[tid], ar, ac, sk);
+                }
+              });
             }
           }
         }
