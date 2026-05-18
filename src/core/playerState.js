@@ -129,6 +129,10 @@ export async function savePlayerToCloud(userId) {
     return true;
   } catch (err) {
     console.warn('Failed to save to cloud:', err);
+    if (err.status === 401 || err.message?.includes('JWT') || err.message?.includes('unauthorized')) {
+      console.warn('⚠️ Invalid or expired auth session. Clearing session...');
+      supabase.auth.signOut().catch(() => {});
+    }
     return false;
   }
 }
@@ -227,6 +231,10 @@ export async function loadPlayerFromCloud(userId) {
     return true;
   } catch (err) {
     console.warn('Failed to load from cloud:', err);
+    if (err.status === 401 || err.message?.includes('JWT') || err.message?.includes('unauthorized')) {
+      console.warn('⚠️ Invalid or expired auth session. Clearing session...');
+      supabase.auth.signOut().catch(() => {});
+    }
     return false;
   }
 }

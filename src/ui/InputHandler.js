@@ -25,7 +25,22 @@ function _refreshDrawerSkills() {
 // ── Main cell click handler ───────────────────────────────────
 
 export function onCell(r, c) {
-  if (G.gameOver || G.turn !== 'player') return;
+  if (G.gameOver) return;
+
+  if (G.mode === 'pvp') {
+    const pvpMod = window.PVPArena;
+    if (!pvpMod) return;
+    if (pvpMod.localRole === 'player1' && G.turn !== 'player') {
+      toast('⏳ Lượt của đối thủ!');
+      return;
+    }
+    if (pvpMod.localRole === 'player2' && G.turn !== 'enemy') {
+      toast('⏳ Lượt của đối thủ!');
+      return;
+    }
+  } else {
+    if (G.turn !== 'player') return;
+  }
 
   const uid = G.grid[r]?.[c];
   const u   = uid ? G.units[uid] : null;
@@ -33,7 +48,19 @@ export function onCell(r, c) {
   // ── Skill target selection ────────────────────────────────
   if (G.activeSk && G.phase === 'sk') {
     if (G.skTgts.some(([a, b]) => a === r && b === c)) {
-      execSkill(G.sel, [r, c], G.activeSk);
+      const fromSel = G.sel;
+      const actSk = G.activeSk;
+      execSkill(fromSel, [r, c], actSk);
+      
+      if (G.mode === 'pvp') {
+        window.PVPArena?.broadcastAction({
+          type: 'SKILL',
+          from: fromSel,
+          to: [r, c],
+          skillId: actSk
+        });
+      }
+      
       // Skill fired → refresh drawer state (MP changed)
       _refreshDrawerSkills();
       return;
@@ -82,6 +109,15 @@ export function onCell(r, c) {
       import('../ui/UIHelpers.js').then(m => m.addLog(`${mu.e} ${mu.n} di chuyển`, 'lm'));
       checkCapture(r, c, mid);
       checkSpecialTile(r, c, mid);
+
+      if (G.mode === 'pvp') {
+        window.PVPArena?.broadcastAction({
+          type: 'MOVE',
+          from: [sr, sc],
+          to: [r, c]
+        });
+      }
+
       if (mu.alive) renderUnitDetail(mu);  // updates drawer state badge
       render();
       showCancel();
@@ -99,6 +135,15 @@ export function onCell(r, c) {
     if (atker && defer && !atker.attacked && defer.o !== atker.o) {
       doAttack(atker, defer, r, c, false);
       atker.attacked = true;
+
+      if (G.mode === 'pvp') {
+        window.PVPArena?.broadcastAction({
+          type: 'ATTACK',
+          from: [sr, sc],
+          to: [r, c]
+        });
+      }
+
       G.reach = []; G.atkbl = []; G.skTgts = [];
       // Refresh drawer to show "done" state
       if (isMobile() && G.units[aid]) renderUnitDetail(G.units[aid]);
@@ -108,8 +153,16 @@ export function onCell(r, c) {
     return;
   }
 
-  // ── Select player unit ────────────────────────────────────
-  if (u && u.alive && u.o === 'player') {
+  const isLocalUnit = G.mode === 'pvp'
+    ? (window.PVPArena?.localRole === 'player1' ? u?.o === 'player' : u?.o === 'enemy')
+    : u?.o === 'player';
+
+  const isEnemyUnit = G.mode === 'pvp'
+    ? (window.PVPArena?.localRole === 'player1' ? u?.o === 'enemy' : u?.o === 'player')
+    : u?.o === 'enemy';
+
+  // ── Select local player unit ──────────────────────────────
+  if (u && u.alive && isLocalUnit) {
     G.activeSk = null;
     G.sel      = [r, c];
     G.phase    = 'sel';
@@ -119,14 +172,14 @@ export function onCell(r, c) {
     renderUnitDetail(u);   // opens drawer on mobile
     render();
     showCancel();
-    if (u.evoReady && !u.evolved && (P.inventory.evo_stone || 0) > 0) {
+    if (u.o === 'player' && u.evoReady && !u.evolved && (P.inventory.evo_stone || 0) > 0) {
       toast(`✨ ${u.n} sẵn sàng tiến hóa! Bấm [EVO] trong drawer.`);
     }
     return;
   }
 
   // ── Tap enemy: show info in drawer (read-only) ────────────
-  if (u && u.alive && u.o === 'enemy') {
+  if (u && u.alive && isEnemyUnit) {
     G.sel = null; G.reach = []; G.atkbl = []; G.skTgts = [];
     renderUnitDetail(u);   // shows enemy stats in drawer
     render();
@@ -151,7 +204,14 @@ export function cancelAct() { cancelSel(); }
 
 // ── Skill picker (from drawer chips or desktop skill buttons) ─
 export function pickSkill(uid, sid) {
-  if (G.turn !== 'player' || G.gameOver) return;
+  if (G.gameOver) return;
+  if (G.mode === 'pvp') {
+    const pvpMod = window.PVPArena;
+    if (pvpMod?.localRole === 'player1' && G.turn !== 'player') return;
+    if (pvpMod?.localRole === 'player2' && G.turn !== 'enemy') return;
+  } else {
+    if (G.turn !== 'player') return;
+  }
   const u  = G.units[uid];
   const sk = SKILLS[sid];
   if (!u?.alive || u.usedSkill) { toast('Không thể dùng kỹ năng!'); return; }

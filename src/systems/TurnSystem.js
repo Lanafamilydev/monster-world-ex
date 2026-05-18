@@ -16,6 +16,12 @@ import { selectBestTarget, selectBestSkill } from './EnemySpawner.js';
 
 export function endTurn() {
   if (G.gameOver) return;
+  
+  if (G.mode === 'pvp') {
+    import('../features/PVPArena.js').then(m => m.PVPArena.endTurn());
+    return;
+  }
+
   G.sel = null; G.reach = []; G.atkbl = []; G.skTgts = [];
   G.activeSk = null; G.phase = 'sel';
   Object.values(G.units).filter(u => u.o === 'player').forEach(u => {

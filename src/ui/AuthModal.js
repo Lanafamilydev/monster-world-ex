@@ -106,6 +106,14 @@ export async function handleEmailRegister() {
       // 1. Set name
       P.name = regName;
       
+      // If email confirmation is enabled in Supabase, data.session is null
+      if (!data.session) {
+        toast('✉️ Đăng ký thành công! Vui lòng xác nhận email để kích hoạt tài khoản.');
+        alert('✨ Đăng ký tài khoản thành công!\n\nHệ thống phát hiện dự án Supabase đang bật chế độ "Confirm email" (Xác nhận Email).\nVui lòng:\n1. Kiểm tra hòm thư của bạn để xác nhận email.\n2. HOẶC vào Supabase Dashboard -> Authentication -> Providers -> Email -> Tắt "Confirm email" để tự động kích hoạt tài khoản đăng ký mới ngay lập tức!');
+        showAuthScreen('email-login');
+        return;
+      }
+
       // 2. Save fresh player database record immediately
       const saved = await savePlayerToCloud(data.user.id);
       if (!saved) {

@@ -9,8 +9,10 @@ import { activateUlti, closeMobUd, closeMobDrawer, initDrawerBindings, toggleMob
 import { createAccount, renamePlayer } from './core/playerState.js';
 import { toggleCodex } from './ui/Codex.js';
 import { showAuthScreen, handleEmailLogin, handleEmailRegister, handleGoogleLogin, handleSignOut } from './ui/AuthModal.js';
+import { PVPArena } from './features/PVPArena.js';
 
 // ── Expose all functions needed by HTML onclick ───────────────
+window.PVPArena             = PVPArena;
 window.switchTab            = switchTab;
 window.openGacha            = openGacha;
 window.closeGachaResult     = closeGachaResult;

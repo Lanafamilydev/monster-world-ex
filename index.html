@@ -401,13 +401,28 @@
       <div class="ms-detail" id="mode-end-floor">Tầng cao: 0</div>
     </div>
     <div class="ms-card arena" onclick="startSession('arena')">
-      <div class="ms-icon">⚔</div>
-      <div class="ms-name">ARENA</div>
+      <div class="ms-icon">🤖</div>
+      <div class="ms-name">AI ARENA</div>
       <div class="ms-desc">Địch mirror đội bạn.<br>+25/-15 Rating.</div>
       <div class="ms-detail" id="mode-arena-rating">Rating: 1000</div>
     </div>
+    <div class="ms-card pvp-arena" onclick="startSession('pvp')">
+      <div class="ms-icon">⚔</div>
+      <div class="ms-name">PVP ARENA</div>
+      <div class="ms-desc">Đấu Realtime trực tuyến.<br>+25/-15 Rating. Xếp hạng.</div>
+      <div class="ms-detail" id="mode-pvp-rating">Rating: 1000</div>
+    </div>
   </div>
   <button class="evo-close" onclick="hideModeSelect()">✕ Đóng</button>
+</div>
+
+<!-- MATCHMAKING OVERLAY -->
+<div id="matchmaking-overlay" class="overlay">
+  <div class="loader" style="width: 80px; height: 80px; border-width: 4px; box-shadow: 0 0 15px rgba(255, 51, 51, 0.2);"></div>
+  <div style="margin-top:20px; font-family:'Orbitron',sans-serif; font-size:18px; color:#ff3333; letter-spacing:3px; animation:glow-p 1.5s infinite alternate">ĐANG TÌM ĐỐI THỦ...</div>
+  <div id="mm-status" style="font-size:11px; color:#888; text-align:center; max-width: 300px; line-height: 1.5;">Đang kết nối đấu trường PvP...</div>
+  <div id="mm-timer" style="font-family:'Orbitron',sans-serif; font-size:24px; color:#fff; margin-top: 10px;">00:00</div>
+  <button class="pb pb-cancel" onclick="window.PVPArena?.cancelMatchmaking()" style="padding: 10px 24px; font-size: 10px; margin-top: 16px; border-color: rgba(255, 51, 51, 0.4); color: #ff5555;">✕ HỦY TÌM TRẬN</button>
 </div>
 
 <div id="endless-reward-overlay">

@@ -43,6 +43,8 @@ export function showModeSelect() {
   overlay.querySelector('#mode-camp-floor').textContent  = `Tầng ${P.campaignFloor || 1}`;
   overlay.querySelector('#mode-end-floor').textContent   = `Tầng cao nhất: ${P.endlessFloor || 0}`;
   overlay.querySelector('#mode-arena-rating').textContent = `Rating: ${P.arenaRating || 1000}`;
+  const pvpRatingEl = overlay.querySelector('#mode-pvp-rating');
+  if (pvpRatingEl) pvpRatingEl.textContent = `Rating: ${P.arenaRating || 1000}`;
 
   overlay.classList.add('show');
 }
@@ -54,6 +56,12 @@ export function hideModeSelect() {
 
 /** Begin a session with the chosen mode */
 export function startSession(mode) {
+  if (mode === 'pvp') {
+    hideModeSelect();
+    import('../features/PVPArena.js').then(m => m.PVPArena.startMatchmaking());
+    return;
+  }
+
   hideModeSelect();
   Session.mode   = mode;
   Session.active = true;
