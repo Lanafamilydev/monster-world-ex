@@ -56,13 +56,35 @@ export function switchTab(name) {
 }
 
 /* ── Account tab ─────────────────────────────────────────────── */
+function withTimeout(promise, ms, fallbackValue) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(fallbackValue), ms);
+    promise.then(
+      (res) => {
+        clearTimeout(timer);
+        resolve(res);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(fallbackValue);
+      }
+    );
+  });
+}
+
 export async function renderAccountTab() {
   const el = document.getElementById('acc-info');
   if (!el) return;
   
   let authStatusHtml = '';
   try {
-    const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: {} }));
+    const authRes = await withTimeout(
+      supabase.auth.getUser(),
+      1000,
+      { data: { user: null } }
+    ).catch(() => ({ data: { user: null } }));
+    
+    const user = authRes?.data?.user;
     if (user) {
       authStatusHtml = `
         <div class="acc-row" style="border-top:1px dashed var(--border); margin-top:8px; padding-top:8px;">

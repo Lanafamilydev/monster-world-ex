@@ -231,13 +231,41 @@ export async function loadPlayerFromCloud(userId) {
   }
 }
 
+/** Promise timeout helper to prevent slow network boot hangs */
+function withTimeout(promise, ms, fallbackValue) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(fallbackValue), ms);
+    promise.then(
+      (res) => {
+        clearTimeout(timer);
+        resolve(res);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(fallbackValue);
+      }
+    );
+  });
+}
+
 /** Load player from IndexedDB, localStorage fallback or Supabase cloud if logged in */
 export async function loadPlayer() {
   try {
-    // 1. Try to load from Supabase first if logged in
-    const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: {} }));
+    // 1. Try to load from Supabase first if logged in (timeout at 1200ms for robust offline fallback)
+    const authRes = await withTimeout(
+      supabase.auth.getUser(),
+      1200,
+      { data: { user: null } }
+    ).catch(() => ({ data: { user: null } }));
+
+    const user = authRes?.data?.user;
     if (user) {
-      const loadedCloud = await loadPlayerFromCloud(user.id);
+      const loadedCloud = await withTimeout(
+        loadPlayerFromCloud(user.id),
+        1500,
+        false
+      ).catch(() => false);
+
       if (loadedCloud) {
         // Keep local cache synced
         localStorage.setItem(SAVE_KEY, JSON.stringify(P));

@@ -120,15 +120,20 @@ document.addEventListener('click', e => {
 
 // ── Boot ──────────────────────────────────────────────────────
 async function init() {
+  console.log('⚡ [MW] Booting Game Engine...');
   try {
+    console.log('⚡ [MW] Loading player state...');
     const hasSave = await loadPlayer();
+    console.log('⚡ [MW] Player state loaded. Has save?', hasSave);
 
     if (hasSave) {
+      console.log('⚡ [MW] Rendering tabs and active UI components...');
       updateGlobalHeader();
       renderItemShop();
       renderRosterTab();
       renderPokedex();
     } else {
+      console.log('⚡ [MW] No save found. Initializing fresh Yugi player & opening welcome modal...');
       initFreshPlayer('Yugi');
       document.getElementById('name-modal')?.classList.add('show');
     }
@@ -136,23 +141,29 @@ async function init() {
     // Guarantee correct body padding at startup
     document.body.style.paddingBottom = window.innerWidth >= 768 ? '0' : '';
 
+    console.log('⚡ [MW] Switching to battle tab...');
     switchTab('battle');
     document.body.classList.add('tab-battle'); // initial state
+    
+    console.log('⚡ [MW] Triggering Mode Select Overlay...');
     setTimeout(() => showModeSelect(), 300);
     calcBoardSize();
 
     // Bind drawer ctrl buttons once — ES-module safe, no onclick= needed
+    console.log('⚡ [MW] Binding drawer controls...');
     initDrawerBindings();
+    console.log('⚡ [MW] Boot complete!');
   } catch (err) {
-    console.error('Initialization failed:', err);
+    console.error('⚡ [MW] Initialization failed with error:', err);
   } finally {
-    // Hide loading screen
+    console.log('⚡ [MW] Hiding loading overlay...');
     const loading = document.getElementById('loading');
     if (loading) {
       loading.style.opacity = '0';
       setTimeout(() => {
         loading.classList.remove('show');
         loading.style.opacity = '';
+        console.log('⚡ [MW] Loading overlay hidden!');
       }, 400);
     }
   }
