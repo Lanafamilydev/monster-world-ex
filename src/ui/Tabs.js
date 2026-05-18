@@ -6,6 +6,7 @@ import { P, savePlayer, updateGlobalHeader } from '../core/playerState.js';
 import { toast } from './UIHelpers.js';
 import { renderItemShop } from '../features/Shop.js';
 import { renderRosterTab } from '../features/Roster.js';
+import { supabase } from '../core/supabaseClient.js';
 
 /** Switch visible tab — syncs BOTH desktop .tnb AND mobile .mnb */
 export function switchTab(name) {
@@ -55,9 +56,38 @@ export function switchTab(name) {
 }
 
 /* ── Account tab ─────────────────────────────────────────────── */
-export function renderAccountTab() {
+export async function renderAccountTab() {
   const el = document.getElementById('acc-info');
   if (!el) return;
+  
+  let authStatusHtml = '';
+  try {
+    const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: {} }));
+    if (user) {
+      authStatusHtml = `
+        <div class="acc-row" style="border-top:1px dashed var(--border); margin-top:8px; padding-top:8px;">
+          <span class="acc-lbl">☁️ Đám mây</span>
+          <span class="acc-val" style="color:var(--green)">ĐÃ ĐỒNG BỘ</span>
+        </div>
+        <div class="acc-row">
+          <span class="acc-lbl">✉️ Email</span>
+          <span class="acc-val" style="font-size:10px; color:var(--cyan); word-break:break-all;">${user.email}</span>
+        </div>
+        <button class="pb pb-cancel" style="margin-top:12px; font-size:10px; padding:8px 0;" onclick="handleSignOut()">🚪 ĐĂNG XUẤT</button>
+      `;
+    } else {
+      authStatusHtml = `
+        <div class="acc-row" style="border-top:1px dashed var(--border); margin-top:8px; padding-top:8px;">
+          <span class="acc-lbl">☁️ Đám mây</span>
+          <span class="acc-val" style="color:var(--red)">CHƯA KẾT NỐI</span>
+        </div>
+        <button class="pb pb-end" style="margin-top:12px; font-size:10px; padding:8px 0;" onclick="document.getElementById('name-modal').classList.add('show'); showAuthScreen('welcome');">🔑 ĐĂNG NHẬP / ĐỒNG BỘ</button>
+      `;
+    }
+  } catch (err) {
+    console.warn(err);
+  }
+
   el.innerHTML = `
     <div class="acc-row"><span class="acc-lbl">👤 Tên</span><span class="acc-val">${P.name||'Yugi'}</span></div>
     <div class="acc-row"><span class="acc-lbl">💰 Vàng</span><span class="acc-val" style="color:var(--gold)">${P.gold}</span></div>
@@ -67,7 +97,8 @@ export function renderAccountTab() {
     <div class="acc-row"><span class="acc-lbl">⚔ Trận đấu</span><span class="acc-val">${P.battles}</span></div>
     <div class="acc-row"><span class="acc-lbl">📖 Campaign Tầng</span><span class="acc-val" style="color:var(--cyan)">${P.campaignFloor||1}</span></div>
     <div class="acc-row"><span class="acc-lbl">♾ Endless Max</span><span class="acc-val" style="color:var(--green)">${P.endlessFloor||0}</span></div>
-    <div class="acc-row"><span class="acc-lbl">⚔ Arena Rating</span><span class="acc-val" style="color:var(--orange)">${P.arenaRating||1000}</span></div>`;
+    <div class="acc-row"><span class="acc-lbl">⚔ Arena Rating</span><span class="acc-val" style="color:var(--orange)">${P.arenaRating||1000}</span></div>
+    ${authStatusHtml}`;
   renderInventoryDisplay();
   renderTalentTree();
   import('../features/LevelUp.js').then(m => m.renderLevelUpList());

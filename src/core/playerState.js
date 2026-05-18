@@ -4,6 +4,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { SAVE_KEY, DEFAULT_PLAYER } from './data.js';
+import { supabase } from './supabaseClient.js';
+
 // Mutable player object — initialized with defaults, merged on load
 export const P = { ...DEFAULT_PLAYER };
 
@@ -46,20 +48,205 @@ async function dbGet(key) {
   });
 }
 
-/** Save player state to localStorage and IndexedDB */
+/** Save player state to localStorage, IndexedDB and Supabase cloud if logged in */
 export async function savePlayer() {
   try {
     const json = JSON.stringify(P);
     localStorage.setItem(SAVE_KEY, json);
     await dbSet(SAVE_KEY, P);
+
+    // Save to Supabase Cloud if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: {} }));
+    if (user) {
+      await savePlayerToCloud(user.id);
+    }
   } catch (e) {
     console.warn('Cannot save:', e);
   }
 }
 
-/** Load player from IndexedDB or localStorage fallback */
+/** Save player state to Supabase Cloud */
+export async function savePlayerToCloud(userId) {
+  try {
+    // 1. Save to 'players' table
+    const { error: pErr } = await supabase.from('players').upsert({
+      id: userId,
+      name: P.name,
+      gold: P.gold,
+      gems: P.gems || 0,
+      total_score: P.totalScore || 0,
+      wins: P.wins || 0,
+      losses: P.losses || 0,
+      battles: P.battles || 0,
+      campaign_floor: P.campaignFloor || 1,
+      endless_floor: P.endlessFloor || 0,
+      arena_rating: P.arenaRating || 1000,
+      talents: P.talents || {},
+      traits: P.traits || {},
+      updated_at: new Date().toISOString()
+    });
+    if (pErr) throw pErr;
+
+    // 2. Save to 'player_inventory' table
+    if (P.inventory) {
+      const invRows = Object.entries(P.inventory).map(([itemId, qty]) => ({
+        player_id: userId,
+        item_id: itemId,
+        quantity: qty
+      }));
+      if (invRows.length > 0) {
+        const { error: iErr } = await supabase.from('player_inventory').upsert(invRows);
+        if (iErr) throw iErr;
+      }
+    }
+
+    // 3. Save to 'player_monsters' table
+    if (P.collection) {
+      const monsterRows = P.collection.map(monsterId => {
+        const ml = P.monsterLevels?.[monsterId] || {};
+        const isInRoster = P.roster.includes(monsterId);
+        const slot = isInRoster ? P.roster.indexOf(monsterId) + 1 : null;
+        return {
+          player_id: userId,
+          monster_id: monsterId,
+          level: ml.lv || 1,
+          xp: ml.xp || 0,
+          is_in_roster: isInRoster,
+          roster_slot: slot,
+          evolved: ml.evolved || false,
+          evo_path_id: ml.evoPathId || null,
+          cls: ml.cls || null,
+          affinity: P.affinity?.[monsterId] || 0,
+          fatigue: P.fatigue?.[monsterId] || 0,
+          runes: P.monsterRunes?.[monsterId] || [null, null, null]
+        };
+      });
+      if (monsterRows.length > 0) {
+        const { error: mErr } = await supabase.from('player_monsters').upsert(monsterRows, { onConflict: 'player_id,monster_id' });
+        if (mErr) throw mErr;
+      }
+    }
+    return true;
+  } catch (err) {
+    console.warn('Failed to save to cloud:', err);
+    return false;
+  }
+}
+
+/** Load player from Supabase Cloud */
+export async function loadPlayerFromCloud(userId) {
+  try {
+    // 1. Fetch player base stats
+    const { data: pData, error: pErr } = await supabase
+      .from('players')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (pErr) throw pErr;
+    if (!pData) return false;
+
+    // 2. Fetch inventory
+    const { data: invData, error: invErr } = await supabase
+      .from('player_inventory')
+      .select('*')
+      .eq('player_id', userId);
+    if (invErr) throw invErr;
+
+    // 3. Fetch monsters
+    const { data: monsterData, error: mErr } = await supabase
+      .from('player_monsters')
+      .select('*')
+      .eq('player_id', userId);
+    if (mErr) throw mErr;
+
+    // Reconstruct player object P
+    const newP = {
+      name: pData.name || 'Yugi',
+      gold: pData.gold ?? 500,
+      gems: pData.gems ?? 10,
+      totalScore: pData.total_score ?? 0,
+      wins: pData.wins ?? 0,
+      losses: pData.losses ?? 0,
+      battles: pData.battles ?? 0,
+      campaignFloor: pData.campaign_floor ?? 1,
+      endlessFloor: pData.endless_floor ?? 0,
+      arenaRating: pData.arena_rating ?? 1000,
+      talents: pData.talents || {},
+      traits: pData.traits || {},
+      inventory: {},
+      runes: [],
+      monsterRunes: {},
+      collection: [],
+      roster: [],
+      affinity: {},
+      fatigue: {},
+      monsterLevels: {}
+    };
+
+    // Parse inventory
+    if (invData) {
+      invData.forEach(row => {
+        newP.inventory[row.item_id] = row.quantity;
+      });
+    }
+    newP.inventory = Object.assign({}, DEFAULT_PLAYER.inventory, newP.inventory);
+
+    // Parse monsters
+    if (monsterData && monsterData.length > 0) {
+      // Order roster based on roster_slot
+      const rosterMonsters = monsterData
+        .filter(m => m.is_in_roster)
+        .sort((a, b) => (a.roster_slot || 0) - (b.roster_slot || 0))
+        .map(m => m.monster_id);
+
+      const collectionMonsters = monsterData.map(m => m.monster_id);
+
+      newP.roster = rosterMonsters;
+      newP.collection = collectionMonsters;
+
+      monsterData.forEach(row => {
+        newP.monsterLevels[row.monster_id] = {
+          lv: row.level || 1,
+          xp: row.xp || 0,
+          evolved: row.evolved || false,
+          evoPathId: row.evo_path_id || null,
+          cls: row.cls || null,
+          status: []
+        };
+        newP.affinity[row.monster_id] = row.affinity || 0;
+        newP.fatigue[row.monster_id] = row.fatigue || 0;
+        newP.monsterRunes[row.monster_id] = row.runes || [null, null, null];
+      });
+    } else {
+      newP.collection = [...DEFAULT_PLAYER.collection];
+      newP.roster = [...DEFAULT_PLAYER.roster];
+    }
+
+    Object.assign(P, newP);
+    return true;
+  } catch (err) {
+    console.warn('Failed to load from cloud:', err);
+    return false;
+  }
+}
+
+/** Load player from IndexedDB, localStorage fallback or Supabase cloud if logged in */
 export async function loadPlayer() {
   try {
+    // 1. Try to load from Supabase first if logged in
+    const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: {} }));
+    if (user) {
+      const loadedCloud = await loadPlayerFromCloud(user.id);
+      if (loadedCloud) {
+        // Keep local cache synced
+        localStorage.setItem(SAVE_KEY, JSON.stringify(P));
+        await dbSet(SAVE_KEY, P);
+        return true;
+      }
+    }
+
+    // 2. Otherwise load from local storage
     let data = await dbGet(SAVE_KEY);
     if (!data) {
       const d = localStorage.getItem(SAVE_KEY);

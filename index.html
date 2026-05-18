@@ -303,13 +303,86 @@
 </div>
 
 <!-- OVERLAYS -->
+<div id="loading" class="overlay show">
+  <div class="loader"></div>
+  <div style="margin-top:16px;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--gold);letter-spacing:2px;animation:glow-p 1.5s infinite alternate">ĐANG TẢI DỮ LIỆU...</div>
+</div>
+
 <div id="toast"></div>
 
-<div id="name-modal">
-  <div class="nm-title">⚡ MONSTER WORLD V5.1</div>
-  <div class="nm-sub">Ultimate Edition — Nhập tên chiến binh</div>
-  <input id="nm-input" maxlength="18" placeholder="Nhập tên..." autofocus>
-  <button class="pb pb-end" style="width:220px;font-size:12px;padding:12px" onclick="createAccount()">⚡ BẮT ĐẦU</button>
+<div id="name-modal" class="overlay">
+  <div class="auth-container">
+    <div class="auth-box">
+      <!-- Title & Branding -->
+      <div class="nm-title">⚡ MONSTER WORLD V5.1</div>
+      <div class="nm-sub" style="font-family:'Orbitron',sans-serif; letter-spacing:1px;">Ultimate Cloud Edition</div>
+      
+      <!-- SCREEN 1: WELCOME SCREEN (CHOICE) -->
+      <div id="auth-screen-welcome" class="auth-screen show">
+        <div style="font-size: 11px; color: #888; text-align: center; margin-bottom: 20px; max-width: 280px; line-height: 1.5;">
+          Lưu trữ đám mây tự động, tham gia đấu trường PvP Arena và bảng xếp hạng thời gian thực.
+        </div>
+        <div class="auth-buttons-group">
+          <button class="pb pb-end auth-btn" onclick="showAuthScreen('guest')">🎮 CHƠI KHÁCH (GUEST MODE)</button>
+          <button class="auth-btn-secondary" onclick="showAuthScreen('email-login')">✉️ ĐĂNG NHẬP BẰNG EMAIL</button>
+          <button class="auth-btn-secondary" onclick="handleGoogleLogin()">🌐 ĐĂNG NHẬP GOOGLE</button>
+        </div>
+      </div>
+      
+      <!-- SCREEN 2: GUEST SIGNUP (Enter name) -->
+      <div id="auth-screen-guest" class="auth-screen">
+        <div class="auth-field-label">NHẬP TÊN CHIẾN BINH</div>
+        <input id="nm-input" maxlength="18" placeholder="Nhập tên..." autofocus style="width: 100%; text-align: center;">
+        <div style="font-size: 10px; color: #555; text-align: center; margin-top: 8px; margin-bottom: 12px; max-width: 240px; line-height: 1.4;">
+          *Dữ liệu sẽ được lưu ở trình duyệt này. Bạn có thể đồng bộ lên đám mây sau.
+        </div>
+        <div class="auth-buttons-row">
+          <button class="pb pb-reset auth-back-btn" onclick="showAuthScreen('welcome')">↩ QUAY LẠI</button>
+          <button class="pb pb-end auth-submit-btn" onclick="createAccount()">⚡ BẮT ĐẦU</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: EMAIL LOGIN -->
+      <div id="auth-screen-email-login" class="auth-screen">
+        <div class="auth-field-label">EMAIL</div>
+        <input id="auth-login-email" class="auth-input" type="email" placeholder="example@gmail.com">
+        
+        <div class="auth-field-label" style="margin-top: 10px;">MẬT KHẨU</div>
+        <input id="auth-login-pass" class="auth-input" type="password" placeholder="••••••••">
+        
+        <div class="auth-switch-link" onclick="showAuthScreen('email-register')" style="margin: 12px 0; font-size: 11px; text-align: center; cursor: pointer; color: var(--gold);">
+          Chưa có tài khoản? Đăng ký tại đây
+        </div>
+        
+        <div class="auth-buttons-row">
+          <button class="pb pb-reset auth-back-btn" onclick="showAuthScreen('welcome')">↩ QUAY LẠI</button>
+          <button class="pb pb-end auth-submit-btn" onclick="handleEmailLogin()">🔑 ĐĂNG NHẬP</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 4: EMAIL REGISTER -->
+      <div id="auth-screen-email-register" class="auth-screen">
+        <div class="auth-field-label">EMAIL</div>
+        <input id="auth-reg-email" class="auth-input" type="email" placeholder="example@gmail.com">
+        
+        <div class="auth-field-label" style="margin-top: 10px;">MẬT KHẨU</div>
+        <input id="auth-reg-pass" class="auth-input" type="password" placeholder="Tối thiểu 6 ký tự">
+        
+        <div class="auth-field-label" style="margin-top: 10px;">TÊN CHIẾN BINH (BIỆT DANH)</div>
+        <input id="auth-reg-name" class="auth-input" maxlength="18" placeholder="Tên của bạn...">
+        
+        <div class="auth-switch-link" onclick="showAuthScreen('email-login')" style="margin: 12px 0; font-size: 11px; text-align: center; cursor: pointer; color: var(--gold);">
+          Đã có tài khoản? Đăng nhập tại đây
+        </div>
+        
+        <div class="auth-buttons-row">
+          <button class="pb pb-reset auth-back-btn" onclick="showAuthScreen('welcome')">↩ QUAY LẠI</button>
+          <button class="pb pb-end auth-submit-btn" onclick="handleEmailRegister()">✨ ĐĂNG KÝ MỚI</button>
+        </div>
+      </div>
+      
+    </div>
+  </div>
 </div>
 
 <div id="mode-select-overlay">
