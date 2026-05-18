@@ -32,7 +32,7 @@ export const PVPArena = {
       if (!user) {
         toast('🔑 Vui lòng ĐĂNG NHẬP để chơi PvP Realtime!');
         document.getElementById('name-modal')?.classList.add('show');
-        import('./AuthModal.js').then(m => m.showAuthScreen('welcome'));
+        import('../ui/AuthModal.js').then(m => m.showAuthScreen('welcome'));
         return;
       }
 
