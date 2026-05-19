@@ -108,11 +108,13 @@ export function initBattle() {
   const board = document.getElementById('board');
   if (board) {
     board.style.gridTemplateColumns = `repeat(${G.cols}, 1fr)`;
-    board.style.aspectRatio = `${G.cols}/${G.rows}`;
   }
 
   // ── Setup captures ──
-  const captureGoal = Session.mode === 'arena' ? 2 : 3;
+  let captureGoal = Session.mode === 'arena' ? 2 : 3;
+  if (Session.mode !== 'arena' && mapData.capturePoints && mapData.capturePoints.length > 0) {
+    captureGoal = Math.floor(mapData.capturePoints.length / 2) + 1;
+  }
   G.captureGoal = captureGoal;
   mapData.capturePoints.forEach(([r, c]) => {
     G.captures[`${r},${c}`] = 'neutral';

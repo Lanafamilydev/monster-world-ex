@@ -225,7 +225,6 @@ export const PVPArena = {
     const board = document.getElementById('board');
     if (board) {
       board.style.gridTemplateColumns = `repeat(${G.cols}, 1fr)`;
-      board.style.aspectRatio = `${G.cols}/${G.rows}`;
     }
 
     // 2. Setup captures

@@ -526,6 +526,12 @@ function _gameOver(winner) {
   if (aiBar) aiBar.style.display = 'none';
   document.getElementById('cancel-btn') && (document.getElementById('cancel-btn').style.display = 'none');
 
+  if (G.mode === 'pvp') {
+    const winnerRole = winner === 'player' ? 'player1' : 'player2';
+    import('../features/PVPArena.js').then(m => m.PVPArena.handlePvPWin(winnerRole));
+    return;
+  }
+
   Object.values(G.units).filter(u => u.o === 'player').forEach(u => {
     persistMonsterLevel(u);
     P.fatigue[u.id] = Math.min(100, (P.fatigue[u.id] || 0) + 15);

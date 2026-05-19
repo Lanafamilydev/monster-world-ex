@@ -3,7 +3,7 @@
 // Manages persistent player data with localStorage sync
 // ═══════════════════════════════════════════════════════════════
 
-import { SAVE_KEY, DEFAULT_PLAYER } from './data.js';
+import { SAVE_KEY, DEFAULT_PLAYER, GACHA_POOL } from './data.js';
 import { supabase } from './supabaseClient.js';
 
 // Mutable player object — initialized with defaults, merged on load
@@ -332,8 +332,20 @@ export async function importSave(b64) {
 }
 
 /** Initialize fresh player state */
-export function initFreshPlayer(name = 'Yugi') {
+export function initFreshPlayer(name = 'Yugi', isGuest = false) {
   Object.assign(P, { ...DEFAULT_PLAYER, name });
+  if (!isGuest) P.gold += 500;
+
+  // Randomize starting monsters
+  const evolvableStarters = ['trigan','great_bar','eye_mouse','flower_man','devil_castle'];
+  const starters = [evolvableStarters[Math.floor(Math.random() * evolvableStarters.length)]];
+  const pool = GACHA_POOL.filter(x => x.t === 'C' || x.t === 'B');
+  const shuffled = pool.sort(() => 0.5 - Math.random());
+  for(let i = 0; i < 4; i++) {
+    if(shuffled[i]) starters.push(shuffled[i].id);
+  }
+  P.collection = [...starters];
+  P.roster = [...starters];
   savePlayer();
 }
 
@@ -360,8 +372,7 @@ export function renamePlayer(name) {
 export function createAccount() {
   const input = document.getElementById('nm-input');
   const name  = (input ? input.value.trim() : '') || 'Yugi';
-  Object.assign(P, { ...DEFAULT_PLAYER, name });
-  savePlayer();
+  initFreshPlayer(name, true);
   document.getElementById('name-modal')?.classList.remove('show');
   updateGlobalHeader();
   import('../features/Shop.js').then(m => m.renderItemShop());

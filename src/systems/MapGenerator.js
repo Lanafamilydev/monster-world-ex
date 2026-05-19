@@ -164,7 +164,6 @@ export function generateMap(mode = 'campaign', floor = 1) {
     placeTiles(map, rows, cols, 'water',    waterCount,    reserved);
     placeTiles(map, rows, cols, 'mountain', mountainCount, reserved);
     placeTiles(map, rows, cols, 'forest',   forestCount,   reserved);
-    placeTiles(map, rows, cols, 'castle',   castleCount,   reserved);
     placeTiles(map, rows, cols, 'trap',     trapCount,     reserved);
     placeTiles(map, rows, cols, 'speedup',  speedupCount,  reserved);
 
@@ -184,7 +183,7 @@ export function generateMap(mode = 'campaign', floor = 1) {
   } while (!isFullyConnected(map, rows, cols) && attempts < MAX_ATTEMPTS);
 
   // Generate capture points on passable tiles
-  const rawPoints = generateCapturePoints(rows, cols, 4);
+  const rawPoints = generateCapturePoints(rows, cols, castleCount);
   const capturePoints = rawPoints.map(([r, c]) => {
     // Ensure capture point is always a castle for gameplay consistency
     map[r][c] = 'castle';
