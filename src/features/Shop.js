@@ -11,6 +11,7 @@ import { renderItemBar } from '../ui/Renderer.js';
 
 /** Render the item shop grid */
 export function renderItemShop() {
+  renderPremiumShopSection();
   const el = document.getElementById('item-shop-list');
   if (!el) return;
   el.innerHTML = '';
@@ -188,9 +189,23 @@ export async function buyPremium(amountVND, gemsReward) {
   document.getElementById('vietqr-amount').innerText = amountVND.toLocaleString();
   document.getElementById('vietqr-desc').innerText = transCode;
   
-  // Construct VietQR URL
-  const bank = 'Vietcombank';
-  const acc = '0271000845142';
+  // Construct VietQR URL dynamically
+  let bank = 'Vietcombank';
+  let acc = '0271000845142';
+  try {
+    const { data } = await supabase
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'payment_config')
+      .single();
+    if (data && data.value) {
+      bank = data.value.bank || bank;
+      acc = data.value.account_no || acc;
+    }
+  } catch (e) {
+    console.warn('Using default payment configs:', e);
+  }
+
   const qrUrl = `https://qr.sepay.vn/img?acc=${acc}&bank=${bank}&amount=${amountVND}&des=${transCode}`;
   document.getElementById('vietqr-img').src = qrUrl;
   
@@ -198,6 +213,50 @@ export async function buyPremium(amountVND, gemsReward) {
   
   // Start polling/listening to this order
   startOrderListener(data.id, gemsReward);
+}
+
+// ── V6.2: Dynamic Premium Packages ────────────────────────────
+const DEFAULT_PAYMENT = {
+  bank: 'Vietcombank',
+  account_no: '0271000845142',
+  account_holder: 'TRAN NAM',
+  packages: [
+    { vnd: 2000, gems: 200, name: 'Gói Tập Sự', desc: 'Chỉ để test SePay', icon: '💎', hue: 180 },
+    { vnd: 10000, gems: 1100, name: 'Gói Tiêu Chuẩn', desc: 'Khuyến mãi +10%', icon: '👑', hue: 250 },
+    { vnd: 20000, gems: 2500, name: 'Gói Vua Chơi', desc: 'Khuyến mãi +25%', icon: '🏆', hue: 300 }
+  ]
+};
+
+export async function renderPremiumShopSection() {
+  const el = document.getElementById('premium-packages-list');
+  if (!el) return;
+
+  const { supabase } = await import('../core/supabaseClient.js');
+
+  let payment = DEFAULT_PAYMENT;
+  try {
+    const { data, error } = await supabase
+      .from('admin_settings')
+      .select('*')
+      .eq('key', 'payment_config')
+      .single();
+    if (data && data.value) {
+      payment = data.value;
+    }
+  } catch (err) {
+    // Expected if table doesn't exist yet or is empty
+  }
+
+  const pkgs = payment.packages || DEFAULT_PAYMENT.packages;
+  el.innerHTML = pkgs.map(p => `
+    <div class="gacha-card gc-premium" onclick="buyPremium(${p.vnd}, ${p.gems})">
+      <div class="gacha-card-icon" style="filter: hue-rotate(${p.hue || 180}deg);">${p.icon || '💎'}</div>
+      <div class="gacha-card-name">${p.name}</div>
+      <div class="gacha-card-cost" style="color: #00ff88">💵 ${p.vnd.toLocaleString()} VNĐ</div>
+      <div class="gacha-card-desc">${p.desc}</div>
+      <div class="gacha-card-rates">Nhận ngay ${p.gems.toLocaleString()} Gems</div>
+    </div>
+  `).join('');
 }
 
 function startOrderListener(orderId, gemsReward) {

@@ -10,6 +10,7 @@ import { createAccount, renamePlayer } from './core/playerState.js';
 import { toggleCodex } from './ui/Codex.js';
 import { showAuthScreen, handleEmailLogin, handleEmailRegister, handleGoogleLogin, handleSignOut } from './ui/AuthModal.js';
 import { PVPArena } from './features/PVPArena.js';
+import { openAdminPanel, closeAdminPanel, switchAdminTab, saveAdminSettings, searchAdminPlayers, adminUpdatePlayer, adminApproveOrder } from './features/Admin.js';
 
 // ── Expose all functions needed by HTML onclick ───────────────
 window.PVPArena             = PVPArena;
@@ -39,6 +40,13 @@ window.handleEmailLogin     = handleEmailLogin;
 window.handleEmailRegister  = handleEmailRegister;
 window.handleGoogleLogin    = handleGoogleLogin;
 window.handleSignOut        = handleSignOut;
+window.openAdminPanel       = openAdminPanel;
+window.closeAdminPanel      = closeAdminPanel;
+window.switchAdminTab       = switchAdminTab;
+window.saveAdminSettings    = saveAdminSettings;
+window.searchAdminPlayers   = searchAdminPlayers;
+window.adminUpdatePlayer    = adminUpdatePlayer;
+window.adminApproveOrder    = adminApproveOrder;
 window.exportData           = () => {
   const code = exportSave();
   prompt('Copy mã lưu trữ của bạn:', code);
