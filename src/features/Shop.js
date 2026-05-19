@@ -139,6 +139,7 @@ export function openRuneGacha() {
 
 // ── V6.1: Premium Shop (SePay) ────────────────────────────────
 let orderSubscription = null;
+let orderPollingInterval = null;
 
 export async function buyPremium(amountVND, gemsReward) {
   const { supabase } = await import('../core/supabaseClient.js');
@@ -261,6 +262,7 @@ export async function renderPremiumShopSection() {
 
 function startOrderListener(orderId, gemsReward) {
   import('../core/supabaseClient.js').then(({ supabase }) => {
+    // 1. Realtime listener (requires table replication enabled)
     orderSubscription = supabase
       .channel(`order_${orderId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, (payload) => {
@@ -273,16 +275,39 @@ function startOrderListener(orderId, gemsReward) {
          }
       })
       .subscribe();
+
+    // 2. Foolproof Polling Fallback (runs every 3 seconds in case Realtime is disabled/blocked)
+    orderPollingInterval = setInterval(async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('status')
+        .eq('id', orderId)
+        .single();
+      
+      if (!error && data && data.status === 'paid') {
+        toast(`💎 NẠP THÀNH CÔNG! Bạn nhận được ${gemsReward} Gems!`);
+        closePaymentModal();
+        P.gems = (P.gems || 0) + gemsReward;
+        savePlayer();
+        updateGlobalHeader();
+      }
+    }, 3000);
   });
 }
 
 export function closePaymentModal() {
   document.getElementById('payment-overlay')?.classList.remove('show');
+  
   if (orderSubscription) {
     import('../core/supabaseClient.js').then(({ supabase }) => {
       supabase.removeChannel(orderSubscription);
       orderSubscription = null;
     });
+  }
+
+  if (orderPollingInterval) {
+    clearInterval(orderPollingInterval);
+    orderPollingInterval = null;
   }
 }
 
