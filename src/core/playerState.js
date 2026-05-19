@@ -230,6 +230,7 @@ export async function loadPlayerFromCloud(userId) {
     }
 
     Object.assign(P, newP);
+    setTimeout(() => checkPendingPaidOrders(), 800);
     return true;
   } catch (err) {
     console.warn('Failed to load from cloud:', err);
@@ -281,6 +282,7 @@ export async function loadPlayer() {
         P.id = user.id;
         localStorage.setItem(SAVE_KEY, JSON.stringify(P));
         await dbSet(SAVE_KEY, P);
+        setTimeout(() => checkPendingPaidOrders(), 800);
         return true;
       }
     }
@@ -472,4 +474,40 @@ export function computePowerScore() {
     total += lv * 20 * evoBonus;
   });
   return Math.round(total / roster.length);
+}
+
+/** Check and auto-credit any orders marked as paid while player was offline */
+export async function checkPendingPaidOrders() {
+  if (!P.id) return;
+  try {
+    const { data: paidOrders, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('player_id', P.id)
+      .eq('status', 'paid');
+    
+    if (error || !paidOrders || paidOrders.length === 0) return;
+
+    if (!P.processedOrders) P.processedOrders = [];
+    let addedGems = 0;
+    let hasNew = false;
+
+    paidOrders.forEach(order => {
+      const code = order.transaction_code || order.order_code;
+      if (!P.processedOrders.includes(code)) {
+        P.processedOrders.push(code);
+        addedGems += order.gems_reward || 0;
+        hasNew = true;
+      }
+    });
+
+    if (hasNew && addedGems > 0) {
+      P.gems = (P.gems || 0) + addedGems;
+      await savePlayer();
+      updateGlobalHeader();
+      showToast(`💎 NẠP THÀNH CÔNG! Đã cộng ${addedGems} Gems vào tài khoản.`);
+    }
+  } catch (err) {
+    console.warn('Error checking pending paid orders:', err);
+  }
 }

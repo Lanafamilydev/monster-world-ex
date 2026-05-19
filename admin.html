@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monster World EX — Admin Portal</title>
+  
+  <!-- Font Setup -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles/main.css">
+  
+  <style>
+    body {
+      background: #03030c;
+      color: #ddd;
+      font-family: 'Rajdhani', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    #admin-login-screen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, #0a0a25 0%, #020207 100%);
+    }
+
+    .admin-login-box {
+      background: rgba(10, 10, 30, 0.8);
+      border: 2px solid var(--gold);
+      border-radius: 16px;
+      padding: 40px;
+      width: 320px;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.15);
+      backdrop-filter: blur(10px);
+    }
+
+    #admin-dashboard {
+      display: none;
+      width: 100%;
+      flex-direction: row;
+    }
+
+    /* Sidebar Navigation */
+    .admin-sidebar {
+      width: 260px;
+      background: #060614;
+      border-right: 1px solid #1a1a2e;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0;
+    }
+
+    .admin-logo {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--gold);
+      text-align: center;
+      padding-bottom: 25px;
+      border-bottom: 1px solid #111;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    }
+
+    .admin-nav-item {
+      padding: 14px 25px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #aaa;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .admin-nav-item:hover {
+      background: rgba(255, 255, 255, 0.02);
+      color: #fff;
+    }
+
+    .admin-nav-item.active {
+      background: rgba(255, 215, 0, 0.04);
+      color: var(--gold);
+      border-left-color: var(--gold);
+      font-weight: 700;
+    }
+
+    /* Main Content Area */
+    .admin-main {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      border-bottom: 1px solid #151525;
+      padding-bottom: 15px;
+    }
+
+    .admin-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .admin-card {
+      background: #090918;
+      border: 1px solid #18182b;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 25px;
+    }
+
+    .admin-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Stats Grid */
+    .admin-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    /* Tables styling */
+    table.admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    table.admin-table th {
+      background: rgba(255, 255, 255, 0.02);
+      color: #888;
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 1px solid #1a1a2e;
+    }
+
+    table.admin-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #10101f;
+      color: #ccc;
+    }
+
+    table.admin-table tr:hover td {
+      background: rgba(255, 255, 255, 0.01);
+      color: #fff;
+    }
+
+    /* Inputs */
+    .admin-input {
+      background: #03030c;
+      border: 1px solid #1a1a2e;
+      border-radius: 6px;
+      color: #fff;
+      padding: 8px 12px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 14px;
+      outline: none;
+      width: 100%;
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+    }
+
+    .admin-input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+    }
+
+    .toast-admin {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #080816;
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      color: #fff;
+      padding: 12px 24px;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: bold;
+      z-index: 10000;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .toast-admin.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="admin-toast" class="toast-admin">Thông báo...</div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="admin-login-screen">
+    <div class="admin-login-box">
+      <div class="admin-logo" style="border: none; padding: 0; margin-bottom: 25px;">MW PORTAL ADMIN</div>
+      <p style="font-size: 12px; color: #777; margin-bottom: 20px;">Nhập mật mã quản trị viên để mở khóa bảng điều khiển.</p>
+      <input type="password" id="admin-passcode" class="admin-input" placeholder="Mật mã Admin..." style="text-align: center; margin-bottom: 20px; font-size: 16px;">
+      <button class="pb pb-end" id="btn-admin-login" style="border: none; font-weight: bold;">ĐĂNG NHẬP</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD WORKSPACE -->
+  <div id="admin-dashboard">
+    
+    <!-- Sidebar Navigation -->
+    <div class="admin-sidebar">
+      <div class="admin-logo">MONSTER WORLD</div>
+      
+      <div class="admin-nav-item active" id="nav-overview" onclick="switchTab('overview')">
+        <span>📊</span> Tổng Quan
+      </div>
+      <div class="admin-nav-item" id="nav-payment" onclick="switchTab('payment')">
+        <span>💳</span> Cấu Hình SePay
+      </div>
+      <div class="admin-nav-item" id="nav-players" onclick="switchTab('players')">
+        <span>👥</span> Người Chơi
+      </div>
+      <div class="admin-nav-item" id="nav-orders" onclick="switchTab('orders')">
+        <span>📜</span> Đơn Hàng
+      </div>
+      
+      <div style="flex: 1;"></div>
+      
+      <div class="admin-nav-item" style="border-top: 1px solid #111; color: var(--red);" onclick="logoutAdmin()">
+        <span>🚪</span> Đăng Xuất
+      </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="admin-main">
+      
+      <!-- HEADER -->
+      <div class="admin-header">
+        <div class="admin-title" id="admin-current-title">Tổng Quan</div>
+        <div style="font-size: 13px; color: #555; font-family: 'Orbitron', sans-serif;" id="admin-time">PORTAL ACTIVE</div>
+      </div>
+
+      <!-- TAB 1: OVERVIEW -->
+      <div class="admin-tab-pane" id="tab-overview">
+        <div class="admin-stats-grid">
+          <div class="admin-stat-card">
+            <div style="font-size: 11px; color: #666; margin-bottom: 5px;">TỔNG NGƯỜI CHƠI</div>
+            <div id="stat-total-players" style="font-size: 28px; font-weight: bold; color: var(--cyan);">0</div>
+          </div>
+          <div class="admin-stat-card">
+            <div style="font-size: 11px; color: #666; margin-bottom: 5px;">TỔNG DOANH THU</div>
+            <div id="stat-total-revenue" style="font-size: 28px; font-weight: bold; color: #00ff88;">0đ</div>
+          </div>
+          <div class="admin-stat-card">
+            <div style="font-size: 11px; color: #666; margin-bottom: 5px;">ĐƠN THÀNH CÔNG</div>
+            <div id="stat-paid-orders" style="font-size: 28px; font-weight: bold; color: var(--gold);">0</div>
+          </div>
+          <div class="admin-stat-card">
+            <div style="font-size: 11px; color: #666; margin-bottom: 5px;">ĐƠN CHỜ DUYỆT</div>
+            <div id="stat-pending-orders" style="font-size: 28px; font-weight: bold; color: #ff4444;">0</div>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-title"><span>⚡</span> Giao Dịch Chờ Duyệt Gần Đây</div>
+          <div style="overflow-x: auto;">
+            <table class="admin-table" id="table-pending-orders">
+              <thead>
+                <tr>
+                  <th>Mã Đơn Hàng</th>
+                  <th>ID Người Chơi</th>
+                  <th>Số Tiền</th>
+                  <th>Ngọc (Gems)</th>
+                  <th style="text-align: center;">Hành Động</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="5" style="text-align: center; padding: 20px; color: #555;">Đang tải dữ liệu...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: PAYMENT CONFIGURATION -->
+      <div class="admin-tab-pane" id="tab-payment" style="display: none;">
+        <div class="admin-card">
+          <div class="admin-card-title"><span>💳</span> Cấu Hình Tài Khoản VietQR</div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div>
+              <label style="font-size: 11px; color: #666;">TÊN NGÂN HÀNG (Ví dụ: MBBank, Vietcombank, ...)</label>
+              <input type="text" id="pay-bank-name" class="admin-input" style="margin-top: 5px;">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: #666;">SỐ TÀI KHOẢN NHẬN TIỀN</label>
+              <input type="text" id="pay-bank-acc" class="admin-input" style="margin-top: 5px;">
+            </div>
+          </div>
+          <div style="margin-bottom: 20px;">
+            <label style="font-size: 11px; color: #666;">TÊN CHỦ TÀI KHOẢN NHẬN TIỀN (Viết hoa không dấu)</label>
+            <input type="text" id="pay-bank-holder" class="admin-input" style="margin-top: 5px;">
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-title"><span>💎</span> Cấu Hình 3 Gói Gems Premium</div>
+          
+          <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
+            <div style="display: flex; gap: 15px; align-items: center; background: rgba(255,255,255,0.01); padding: 12px; border-radius: 8px; border: 1px solid #111;">
+              <span style="font-weight: bold; width: 140px; color: var(--gold);">GÓI 1 (Tập sự)</span>
+              <input id="pkg1-vnd" type="number" placeholder="VND" class="admin-input" style="width: 150px;">
+              <span style="color: #444;">=</span>
+              <input id="pkg1-gems" type="number" placeholder="Gems" class="admin-input" style="width: 120px;">
+              <span style="font-size: 12px; color: #666;">Gems</span>
+            </div>
+            
+            <div style="display: flex; gap: 15px; align-items: center; background: rgba(255,255,255,0.01); padding: 12px; border-radius: 8px; border: 1px solid #111;">
+              <span style="font-weight: bold; width: 140px; color: var(--gold);">GÓI 2 (Tiêu chuẩn)</span>
+              <input id="pkg2-vnd" type="number" placeholder="VND" class="admin-input" style="width: 150px;">
+              <span style="color: #444;">=</span>
+              <input id="pkg2-gems" type="number" placeholder="Gems" class="admin-input" style="width: 120px;">
+              <span style="font-size: 12px; color: #666;">Gems</span>
+            </div>
+
+            <div style="display: flex; gap: 15px; align-items: center; background: rgba(255,255,255,0.01); padding: 12px; border-radius: 8px; border: 1px solid #111;">
+              <span style="font-weight: bold; width: 140px; color: var(--gold);">GÓI 3 (Vua chơi)</span>
+              <input id="pkg3-vnd" type="number" placeholder="VND" class="admin-input" style="width: 150px;">
+              <span style="color: #444;">=</span>
+              <input id="pkg3-gems" type="number" placeholder="Gems" class="admin-input" style="width: 120px;">
+              <span style="font-size: 12px; color: #666;">Gems</span>
+            </div>
+          </div>
+          
+          <button class="pb pb-end" style="border: none; font-weight: bold; font-size: 13px;" onclick="saveSettings()">LƯU TẤT CẢ CẤU HÌNH</button>
+        </div>
+      </div>
+
+      <!-- TAB 3: PLAYERS MANAGEMENT -->
+      <div class="admin-tab-pane" id="tab-players" style="display: none;">
+        <div class="admin-card">
+          <div class="admin-card-title"><span>👥</span> Danh Sách & Chỉnh Sửa Người Chơi</div>
+          
+          <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input type="text" id="search-player-input" class="admin-input" placeholder="Tìm người chơi theo Tên..." style="flex: 1;">
+            <button class="pb pb-end" style="width: auto; padding: 0 25px; border: none; font-weight: bold;" onclick="searchPlayers()">TÌM KIẾM</button>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="admin-table" id="table-players">
+              <thead>
+                <tr>
+                  <th>ID Người Chơi</th>
+                  <th>Tên</th>
+                  <th>Vàng</th>
+                  <th>Gems (Ngọc)</th>
+                  <th style="text-align: center;">Hành Động</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="5" style="text-align: center; padding: 20px; color: #555;">Đang tải danh sách người chơi...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: ORDERS HISTORY -->
+      <div class="admin-tab-pane" id="tab-orders" style="display: none;">
+        <div class="admin-card">
+          <div class="admin-card-title"><span>📜</span> Lịch Sử Giao Dịch Nạp Tiền</div>
+          
+          <div style="overflow-x: auto; max-height: 550px;">
+            <table class="admin-table" id="table-all-orders">
+              <thead>
+                <tr>
+                  <th>Mã Đơn Hàng</th>
+                  <th>ID Người Chơi</th>
+                  <th>Số Tiền</th>
+                  <th>Gems Nhận</th>
+                  <th>Trạng Thái</th>
+                  <th>Ngày Tạo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="6" style="text-align: center; padding: 20px; color: #555;">Đang tải danh sách đơn hàng...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LOAD ADMIN JS MODULE -->
+  <script type="module" src="src/admin.js"></script>
+
+</body>
+</html>
