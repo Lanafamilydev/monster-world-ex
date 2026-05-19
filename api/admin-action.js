@@ -12,9 +12,9 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized passcode' });
   }
 
-  // Connect to Supabase with SERVICE_ROLE bypass key
+  // Connect to Supabase (Fallback to ANON key to avoid hard 500 error if service role key is not configured)
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
     return res.status(500).json({ error: 'Server credentials configuration error' });
@@ -23,7 +23,79 @@ export default async function handler(req, res) {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
-    // ─── ACTION 1: APPROVE ORDER ─────────────────────────────────
+    // ─── ACTION: GET OVERVIEW STATISTICS & PENDING ORDERS ───────────
+    if (action === 'get-overview') {
+      // 1. Get total player count
+      const { count: totalPlayers, error: pErr } = await supabase
+        .from('players')
+        .select('*', { count: 'exact', head: true });
+
+      if (pErr) throw pErr;
+
+      // 2. Fetch all orders (Limit to 5000 to scan everything)
+      const { data: orders, error: oErr } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5000);
+
+      if (oErr) throw oErr;
+
+      let revenue = 0;
+      let paidCount = 0;
+      let pendingCount = 0;
+      const pendingOrders = [];
+
+      (orders || []).forEach(o => {
+        if (o.status === 'paid' || o.status === 'completed') {
+          revenue += o.amount || 0;
+          paidCount++;
+        } else {
+          pendingCount++;
+          pendingOrders.push(o);
+        }
+      });
+
+      return res.status(200).json({
+        success: true,
+        totalPlayers: totalPlayers || 0,
+        revenue,
+        paidCount,
+        pendingCount,
+        pendingOrders
+      });
+    }
+
+    // ─── ACTION: GET ALL PLAYERS ──────────────────────────────────
+    if (action === 'get-players') {
+      const { query } = payload || {};
+      let reqQuery = supabase.from('players').select('*');
+
+      if (query) {
+        reqQuery = reqQuery.ilike('name', `%${query}%`);
+      }
+
+      const { data: players, error } = await reqQuery
+        .order('created_at', { ascending: false })
+        .limit(1000);
+
+      if (error) throw error;
+      return res.status(200).json({ success: true, players });
+    }
+
+    // ─── ACTION: GET ALL ORDERS HISTORY ───────────────────────────
+    if (action === 'get-orders') {
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+
+      if (error) throw error;
+      return res.status(200).json({ success: true, orders });
+    }
+
+    // ─── ACTION: APPROVE ORDER ─────────────────────────────────
     if (action === 'approve-order') {
       const { orderId, playerId, gemsReward } = payload || {};
       if (!orderId || !playerId) {
@@ -61,7 +133,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, message: 'Order approved and gems credited.' });
     }
 
-    // ─── ACTION 2: UPDATE PLAYER STATS ──────────────────────────
+    // ─── ACTION: UPDATE PLAYER STATS ──────────────────────────
     if (action === 'update-player') {
       const { targetPlayerId, gold, gems } = payload || {};
       if (!targetPlayerId) {
@@ -81,7 +153,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, message: 'Player stats updated successfully.' });
     }
 
-    // ─── ACTION 3: SAVE ADMIN SETTINGS ──────────────────────────
+    // ─── ACTION: SAVE ADMIN SETTINGS ──────────────────────────
     if (action === 'save-settings') {
       const { key, value } = payload || {};
       if (!key || !value) {

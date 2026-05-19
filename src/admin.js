@@ -98,44 +98,18 @@ async function switchTab(tabName) {
 // ── Tab 1: Overview & Active Pending Orders ──────────────────
 async function loadOverview() {
   try {
-    // 1. Fetch total players
-    const { count: totalPlayers, error: pErr } = await supabase
-      .from('players')
-      .select('*', { count: 'exact', head: true });
+    const data = await runAdminAction('get-overview');
     
-    if (pErr) throw pErr;
-    document.getElementById('stat-total-players').innerText = totalPlayers || 0;
-
-    // 2. Fetch all orders
-    const { data: orders, error: oErr } = await supabase
-      .from('orders')
-      .select('*');
-
-    if (oErr) throw oErr;
-
-    let revenue = 0;
-    let paidCount = 0;
-    let pendingCount = 0;
-    const pendingOrders = [];
-
-    (orders || []).forEach(o => {
-      if (o.status === 'paid' || o.status === 'completed') {
-        revenue += o.amount || 0;
-        paidCount++;
-      } else {
-        pendingCount++;
-        pendingOrders.push(o);
-      }
-    });
-
-    document.getElementById('stat-total-revenue').innerText = revenue.toLocaleString() + 'đ';
-    document.getElementById('stat-paid-orders').innerText = paidCount;
-    document.getElementById('stat-pending-orders').innerText = pendingCount;
+    document.getElementById('stat-total-players').innerText = data.totalPlayers || 0;
+    document.getElementById('stat-total-revenue').innerText = data.revenue.toLocaleString() + 'đ';
+    document.getElementById('stat-paid-orders').innerText = data.paidCount;
+    document.getElementById('stat-pending-orders').innerText = data.pendingCount;
 
     // Render pending orders table
     const tableBody = document.querySelector('#table-pending-orders tbody');
     if (!tableBody) return;
 
+    const pendingOrders = data.pendingOrders || [];
     if (pendingOrders.length === 0) {
       tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 25px; color: #555;">🎉 Không có giao dịch nào đang chờ duyệt!</td></tr>`;
       return;
@@ -238,15 +212,10 @@ async function searchPlayers() {
   if (!tableBody) return;
 
   try {
-    let req = supabase.from('players').select('*');
-    if (query) {
-      req = req.ilike('name', `%${query}%`);
-    }
+    const data = await runAdminAction('get-players', { query });
+    const players = data.players || [];
 
-    const { data: players, error } = await req.limit(50);
-    if (error) throw error;
-
-    if (!players || players.length === 0) {
+    if (players.length === 0) {
       tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 25px; color: #555;">🔍 Không tìm thấy người chơi nào.</td></tr>`;
       return;
     }
@@ -292,15 +261,10 @@ async function loadOrdersHistory() {
   if (!tableBody) return;
 
   try {
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100);
+    const data = await runAdminAction('get-orders');
+    const orders = data.orders || [];
 
-    if (error) throw error;
-
-    if (!orders || orders.length === 0) {
+    if (orders.length === 0) {
       tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 25px; color: #555;">Không có đơn hàng nào trong lịch sử.</td></tr>`;
       return;
     }

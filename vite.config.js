@@ -1,10 +1,15 @@
 import { defineConfig, loadEnv } from 'vite';
-import { createClient } from '@supabase/supabase-js';
 import path from 'path';
+import adminActionHandler from './api/admin-action.js';
 
 export default defineConfig(({ mode }) => {
   // Load environment variables (from .env.local, .env, etc.)
   const env = loadEnv(mode, process.cwd(), '');
+  
+  // Inject env vars to process.env so that the serverless handler can read them
+  for (const [key, val] of Object.entries(env)) {
+    process.env[key] = val;
+  }
 
   return {
     build: {
@@ -32,89 +37,15 @@ export default defineConfig(({ mode }) => {
               req.on('data', chunk => { body += chunk; });
               req.on('end', async () => {
                 try {
-                  const { action, passcode, payload } = JSON.parse(body || '{}');
-
-                  if (passcode !== 'admin123') {
-                    res.statusCode = 401;
-                    res.setHeader('Content-Type', 'application/json');
-                    return res.end(JSON.stringify({ error: 'Unauthorized passcode' }));
-                  }
-
-                  const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
-                  // Fallback to VITE_SUPABASE_ANON_KEY on local if service role key is not configured locally
-                  const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.VITE_SUPABASE_ANON_KEY;
-
-                  if (!supabaseUrl || !supabaseServiceKey) {
-                    res.statusCode = 500;
-                    res.setHeader('Content-Type', 'application/json');
-                    return res.end(JSON.stringify({ error: 'Missing local environment variables VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY' }));
-                  }
-
-                  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-                  // ─── ACTION 1: APPROVE ORDER ─────────────────────────────────
-                  if (action === 'approve-order') {
-                    const { orderId, playerId, gemsReward } = payload || {};
-                    
-                    const { error: orderErr } = await supabase
-                      .from('orders')
-                      .update({ status: 'paid' })
-                      .eq('id', orderId);
-
-                    if (orderErr) throw orderErr;
-
-                    res.statusCode = 200;
-                    res.setHeader('Content-Type', 'application/json');
-                    return res.end(JSON.stringify({ success: true, message: 'Order approved locally.' }));
-                  }
-
-                  // ─── ACTION 2: UPDATE PLAYER STATS ──────────────────────────
-                  if (action === 'update-player') {
-                    const { targetPlayerId, gold, gems } = payload || {};
-                    
-                    const { error } = await supabase
-                      .from('players')
-                      .update({
-                        gold: parseInt(gold) || 0,
-                        gems: parseInt(gems) || 0,
-                        updated_at: new Date().toISOString()
-                      })
-                      .eq('id', targetPlayerId);
-
-                    if (error) throw error;
-
-                    res.statusCode = 200;
-                    res.setHeader('Content-Type', 'application/json');
-                    return res.end(JSON.stringify({ success: true, message: 'Player stats updated.' }));
-                  }
-
-                  // ─── ACTION 3: SAVE ADMIN SETTINGS ──────────────────────────
-                  if (action === 'save-settings') {
-                    const { key, value } = payload || {};
-                    
-                    const { error } = await supabase
-                      .from('admin_settings')
-                      .upsert({
-                        key,
-                        value,
-                        updated_at: new Date().toISOString()
-                      });
-
-                    if (error) throw error;
-
-                    res.statusCode = 200;
-                    res.setHeader('Content-Type', 'application/json');
-                    return res.end(JSON.stringify({ success: true, message: 'Settings saved.' }));
-                  }
-
-                  res.statusCode = 400;
-                  res.setHeader('Content-Type', 'application/json');
-                  return res.end(JSON.stringify({ error: 'Invalid action requested' }));
-
+                  // Parse body and assign to req.body for serverless handler
+                  req.body = JSON.parse(body || '{}');
+                  
+                  // Call the unified serverless handler directly!
+                  await adminActionHandler(req, res);
                 } catch (err) {
                   res.statusCode = 500;
                   res.setHeader('Content-Type', 'application/json');
-                  return res.end(JSON.stringify({ error: err.message || 'Internal Server Error' }));
+                  return res.end(JSON.stringify({ error: `Local API Emulator Error: ${err.message}` }));
                 }
               });
               return;
