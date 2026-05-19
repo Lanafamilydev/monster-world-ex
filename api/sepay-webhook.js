@@ -63,8 +63,7 @@ export default async function handler(req, res) {
     const { error: updateError } = await supabase
       .from('orders')
       .update({ 
-        status: 'paid', 
-        paid_at: new Date().toISOString() 
+        status: 'paid'
       })
       .eq('id', matchedOrder.id);
       

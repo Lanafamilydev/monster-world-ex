@@ -482,25 +482,42 @@ export async function checkPendingPaidOrders() {
   try {
     const { data: paidOrders, error } = await supabase
       .from('orders')
-      .select('*')
+      .select('id, gems_reward')
       .eq('player_id', P.id)
       .eq('status', 'paid');
     
     if (error || !paidOrders || paidOrders.length === 0) return;
 
     let addedGems = 0;
-    const orderIds = [];
-
-    paidOrders.forEach(order => {
-      addedGems += order.gems_reward || 0;
-      orderIds.push(order.id);
+    const claims = paidOrders.map(async (order) => {
+      try {
+        const res = await fetch('/api/claim-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ orderId: order.id })
+        });
+        const resData = await res.json();
+        if (res.ok && resData.success) {
+          addedGems += order.gems_reward || 0;
+          return resData.newGems;
+        }
+      } catch (err) {
+        console.warn(`[Sync Offline Claim Fail] Order ${order.id}:`, err);
+      }
+      return null;
     });
 
-    if (addedGems > 0 && orderIds.length > 0) {
-      // 1. Credit locally
-      P.gems = (P.gems || 0) + addedGems;
+    const results = await Promise.all(claims);
+    const validResults = results.filter(v => v !== null);
+
+    if (validResults.length > 0) {
+      // Set the local gems to the latest verified gems count from the server response
+      const latestGems = validResults[validResults.length - 1];
+      P.gems = latestGems;
       await savePlayer();
-      
+
       // Update global header if visible
       if (typeof updateGlobalHeader === 'function') {
         updateGlobalHeader();
@@ -509,19 +526,13 @@ export async function checkPendingPaidOrders() {
         const gemsEl = document.getElementById('header-gems') || document.querySelector('.acc-val[style*="var(--cyan)"]');
         if (gemsEl) gemsEl.innerText = P.gems;
       }
-      
+
       const { toast: gameToast } = await import('../features/Shop.js').catch(() => ({}));
       if (gameToast) {
         gameToast(`💎 NẠP THÀNH CÔNG! Đã cộng ${addedGems} Gems vào tài khoản.`);
       } else {
         alert(`💎 NẠP THÀNH CÔNG! Đã cộng ${addedGems} Gems vào tài khoản.`);
       }
-
-      // 2. Mark orders as completed in the database to prevent duplicate processing
-      await supabase
-        .from('orders')
-        .update({ status: 'completed' })
-        .in('id', orderIds);
     }
   } catch (err) {
     console.warn('Error checking pending paid orders:', err);

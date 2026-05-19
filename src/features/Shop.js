@@ -260,21 +260,44 @@ export async function renderPremiumShopSection() {
   `).join('');
 }
 
+async function claimOrderOnServer(orderId, gemsReward) {
+  try {
+    const res = await fetch('/api/claim-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ orderId })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Lỗi đồng bộ nạp ngọc');
+
+    const { P, savePlayer } = await import('../core/playerState.js');
+    P.gems = data.newGems;
+    await savePlayer();
+
+    // Update UI elements securely
+    const headerGems = document.getElementById('header-gems') || document.querySelector('.acc-val[style*="var(--cyan)"]');
+    if (headerGems) headerGems.innerText = P.gems;
+
+    toast(`💎 NẠP THÀNH CÔNG! Bạn nhận được ${gemsReward} Gems!`);
+    return true;
+  } catch (err) {
+    console.error('[Shop Claim Error]:', err);
+    return false;
+  }
+}
+
 function startOrderListener(orderId, gemsReward) {
   import('../core/supabaseClient.js').then(({ supabase }) => {
     // 1. Realtime listener (requires table replication enabled)
     orderSubscription = supabase
       .channel(`order_${orderId}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, (payload) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, async (payload) => {
          if (payload.new.status === 'paid') {
-           toast(`💎 NẠP THÀNH CÔNG! Bạn nhận được ${gemsReward} Gems!`);
            closePaymentModal(true);
-           P.gems = (P.gems || 0) + gemsReward;
-           savePlayer();
-           updateGlobalHeader();
-           
-           // Mark order as completed to prevent duplicate crediting
-           supabase.from('orders').update({ status: 'completed' }).eq('id', orderId).then();
+           await claimOrderOnServer(orderId, gemsReward);
          }
       })
       .subscribe();
@@ -288,14 +311,8 @@ function startOrderListener(orderId, gemsReward) {
         .single();
       
       if (!error && data && data.status === 'paid') {
-        toast(`💎 NẠP THÀNH CÔNG! Bạn nhận được ${gemsReward} Gems!`);
         closePaymentModal(true);
-        P.gems = (P.gems || 0) + gemsReward;
-        savePlayer();
-        updateGlobalHeader();
-        
-        // Mark order as completed to prevent duplicate crediting
-        await supabase.from('orders').update({ status: 'completed' }).eq('id', orderId);
+        await claimOrderOnServer(orderId, gemsReward);
       }
     }, 3000);
   });
