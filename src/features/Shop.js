@@ -165,10 +165,11 @@ export async function buyPremium(amountVND, gemsReward) {
   const { data, error } = await supabase
     .from('orders')
     .insert({
-      player_id: P.id,
+      player_id: userId,
       amount: amountVND,
       gems_reward: gemsReward,
-      transaction_code: transCode
+      transaction_code: transCode,
+      order_code: transCode
     })
     .select()
     .single();

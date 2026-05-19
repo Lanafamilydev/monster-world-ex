@@ -38,10 +38,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    // Find the order that matches the transaction_code inside the bank transfer content
+    // Find the order that matches the transaction_code/order_code inside the bank transfer content
     let matchedOrder = null;
     for (const order of pendingOrders) {
-      if (content.includes(order.transaction_code.toUpperCase())) {
+      const codeToCheck = (order.order_code || order.transaction_code || '').toUpperCase();
+      if (codeToCheck && content.includes(codeToCheck)) {
         matchedOrder = order;
         break;
       }
