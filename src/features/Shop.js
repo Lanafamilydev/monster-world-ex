@@ -268,7 +268,7 @@ function startOrderListener(orderId, gemsReward) {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, (payload) => {
          if (payload.new.status === 'paid') {
            toast(`💎 NẠP THÀNH CÔNG! Bạn nhận được ${gemsReward} Gems!`);
-           closePaymentModal();
+           closePaymentModal(true);
            P.gems = (P.gems || 0) + gemsReward;
            savePlayer();
            updateGlobalHeader();
@@ -286,7 +286,7 @@ function startOrderListener(orderId, gemsReward) {
       
       if (!error && data && data.status === 'paid') {
         toast(`💎 NẠP THÀNH CÔNG! Bạn nhận được ${gemsReward} Gems!`);
-        closePaymentModal();
+        closePaymentModal(true);
         P.gems = (P.gems || 0) + gemsReward;
         savePlayer();
         updateGlobalHeader();
@@ -295,19 +295,21 @@ function startOrderListener(orderId, gemsReward) {
   });
 }
 
-export function closePaymentModal() {
+export function closePaymentModal(stopListening = false) {
   document.getElementById('payment-overlay')?.classList.remove('show');
   
-  if (orderSubscription) {
-    import('../core/supabaseClient.js').then(({ supabase }) => {
-      supabase.removeChannel(orderSubscription);
-      orderSubscription = null;
-    });
-  }
+  if (stopListening) {
+    if (orderSubscription) {
+      import('../core/supabaseClient.js').then(({ supabase }) => {
+        supabase.removeChannel(orderSubscription);
+        orderSubscription = null;
+      });
+    }
 
-  if (orderPollingInterval) {
-    clearInterval(orderPollingInterval);
-    orderPollingInterval = null;
+    if (orderPollingInterval) {
+      clearInterval(orderPollingInterval);
+      orderPollingInterval = null;
+    }
   }
 }
 

@@ -319,26 +319,7 @@ export async function adminApproveOrder(orderId, gemsReward, playerId) {
   if (!confirmApprove) return;
 
   try {
-    // 1. Fetch current player gems
-    const { data: player, error: pErr } = await supabase
-      .from('players')
-      .select('gems')
-      .eq('id', playerId)
-      .single();
-
-    if (pErr) throw pErr;
-
-    const currentGems = player?.gems || 0;
-
-    // 2. Add Gems in DB
-    const { error: updPlayerErr } = await supabase
-      .from('players')
-      .update({ gems: currentGems + gemsReward })
-      .eq('id', playerId);
-
-    if (updPlayerErr) throw updPlayerErr;
-
-    // 3. Mark order as paid
+    // 1. Mark order as paid first (so client can detect it immediately!)
     const { error: updOrderErr } = await supabase
       .from('orders')
       .update({ status: 'paid', paid_at: new Date().toISOString() })
@@ -346,7 +327,26 @@ export async function adminApproveOrder(orderId, gemsReward, playerId) {
 
     if (updOrderErr) throw updOrderErr;
 
-    toast('⚡ Duyệt đơn hàng thành công! Gems đã được cộng vào tài khoản người chơi.');
+    // 2. Try to update player's gems in the database (Best Effort)
+    try {
+      const { data: player, error: pErr } = await supabase
+        .from('players')
+        .select('gems')
+        .eq('id', playerId)
+        .single();
+
+      if (!pErr && player) {
+        const currentGems = player.gems || 0;
+        await supabase
+          .from('players')
+          .update({ gems: currentGems + gemsReward })
+          .eq('id', playerId);
+      }
+    } catch (dbErr) {
+      console.warn('[Admin] Direct player gems update skipped/failed (likely RLS), relying on client sync:', dbErr);
+    }
+
+    toast('⚡ Duyệt đơn hàng thành công! Trạng thái đơn đã chuyển sang Paid.');
     
     // Refresh Overview
     await loadOverviewData();
@@ -360,6 +360,6 @@ export async function adminApproveOrder(orderId, gemsReward, playerId) {
 
   } catch (err) {
     console.error('[Admin] Manual approval failed:', err);
-    toast('❌ Phê duyệt thất bại. Vui lòng kiểm tra lại.');
+    toast(`❌ Phê duyệt thất bại: ${err.message || err}`);
   }
 }

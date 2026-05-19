@@ -768,7 +768,10 @@
       <div class="loader" style="width: 14px; height: 14px; display: inline-block; border-width: 2px; vertical-align: middle; margin-right: 5px;"></div>
       Hệ thống đang chờ giao dịch... Nhận ngọc sau 5-10s!
     </div>
-    <button class="pb pb-cancel" onclick="closePaymentModal()">HỦY GIAO DỊCH</button>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <button class="pb pb-end" style="border: none; font-size: 11px;" onclick="closePaymentModal(false)">ẨN HỘP THOẠI (VẪN ĐỢI NẠP)</button>
+      <button class="pb" style="background: rgba(255,255,255,0.05); color: #888; border: 1px solid #333; font-size: 9px; padding: 4px;" onclick="closePaymentModal(true)">HỦY GIAO DỊCH (DỪNG CHỜ)</button>
+    </div>
   </div>
 </div>
 
