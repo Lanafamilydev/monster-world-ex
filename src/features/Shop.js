@@ -140,17 +140,26 @@ export function openRuneGacha() {
 let orderSubscription = null;
 
 export async function buyPremium(amountVND, gemsReward) {
-  if (!P.id) {
+  const { supabase } = await import('../core/supabaseClient.js');
+  
+  let userId = P.id;
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    if (user) {
+      userId = user.id;
+      P.id = user.id;
+    }
+  }
+
+  if (!userId) {
     toast('⚠ Bạn cần tạo tài khoản (Đăng nhập Email) để nạp thẻ!');
-    document.getElementById('auth-modal')?.classList.add('show');
+    document.getElementById('name-modal')?.classList.add('show');
     return;
   }
 
   // Generate unique transaction code
   const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  const transCode = `MW${P.id.substring(0,4).toUpperCase()}${randomSuffix}`;
-
-  const { supabase } = await import('../core/supabaseClient.js');
+  const transCode = `MW${userId.substring(0,4).toUpperCase()}${randomSuffix}`;
 
   // Insert pending order into database
   const { data, error } = await supabase

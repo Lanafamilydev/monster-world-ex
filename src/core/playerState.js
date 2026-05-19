@@ -68,6 +68,7 @@ export async function savePlayer() {
 /** Save player state to Supabase Cloud */
 export async function savePlayerToCloud(userId) {
   try {
+    P.id = userId;
     // 1. Save to 'players' table
     const { error: pErr } = await supabase.from('players').upsert({
       id: userId,
@@ -166,6 +167,7 @@ export async function loadPlayerFromCloud(userId) {
 
     // Reconstruct player object P
     const newP = {
+      id: userId,
       name: pData.name || 'Yugi',
       gold: pData.gold ?? 500,
       gems: pData.gems ?? 10,
@@ -276,6 +278,7 @@ export async function loadPlayer() {
 
       if (loadedCloud) {
         // Keep local cache synced
+        P.id = user.id;
         localStorage.setItem(SAVE_KEY, JSON.stringify(P));
         await dbSet(SAVE_KEY, P);
         return true;
@@ -303,6 +306,9 @@ export async function loadPlayer() {
       runes:         data.runes || [],
     });
     Object.assign(P, merged);
+    if (user) {
+      P.id = user.id;
+    }
     return true;
   } catch (e) {
     console.warn('Load error:', e);
