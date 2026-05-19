@@ -119,7 +119,7 @@ async function loadOverview() {
     const pendingOrders = [];
 
     (orders || []).forEach(o => {
-      if (o.status === 'paid') {
+      if (o.status === 'paid' || o.status === 'completed') {
         revenue += o.amount || 0;
         paidCount++;
       } else {
@@ -223,19 +223,11 @@ async function saveSettings() {
   };
 
   try {
-    const { error } = await supabase
-      .from('admin_settings')
-      .upsert({
-        key: 'payment_config',
-        value: newConfig,
-        updated_at: new Date().toISOString()
-      });
-
-    if (error) throw error;
+    await runAdminAction('save-settings', { key: 'payment_config', value: newConfig });
     showToast('✅ Đã lưu cấu hình thanh toán thành công!');
   } catch (err) {
     console.error('Save configs error:', err);
-    showToast('❌ Không thể lưu cấu hình. Hãy kiểm tra bảng admin_settings.');
+    showToast(`❌ Không thể lưu cấu hình: ${err.message || err}`);
   }
 }
 
@@ -286,16 +278,11 @@ async function updatePlayerGems(playerId) {
   const gems = parseInt(document.getElementById(`player-gems-${playerId}`).value) || 0;
 
   try {
-    const { error } = await supabase
-      .from('players')
-      .update({ gold, gems, updated_at: new Date().toISOString() })
-      .eq('id', playerId);
-
-    if (error) throw error;
+    await runAdminAction('update-player', { targetPlayerId: playerId, gold, gems });
     showToast('✅ Cập nhật dữ liệu người chơi thành công!');
   } catch (err) {
     console.error('Update player error:', err);
-    showToast('❌ Gặp lỗi khi lưu lên database (Có thể do chính sách RLS).');
+    showToast(`❌ Không thể lưu: ${err.message || err}`);
   }
 }
 
@@ -325,8 +312,8 @@ async function loadOrdersHistory() {
         <td style="color: #00ff88; font-weight: bold;">${o.amount.toLocaleString()}đ</td>
         <td style="color: var(--cyan);">${o.gems_reward} 💎</td>
         <td>
-          <span style="font-weight: bold; font-size: 11px; padding: 3px 8px; border-radius: 4px; background: ${o.status === 'paid' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.1)'}; color: ${o.status === 'paid' ? '#00ff88' : '#ff4444'};">
-            ${o.status === 'paid' ? 'THÀNH CÔNG' : 'CHỜ DUYỆT'}
+          <span style="font-weight: bold; font-size: 11px; padding: 3px 8px; border-radius: 4px; background: ${(o.status === 'paid' || o.status === 'completed') ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.1)'}; color: ${(o.status === 'paid' || o.status === 'completed') ? '#00ff88' : '#ff4444'};">
+            ${(o.status === 'paid' || o.status === 'completed') ? 'THÀNH CÔNG' : 'CHỜ DUYỆT'}
           </span>
         </td>
         <td style="font-size: 11px; color: #666;">${new Date(o.created_at).toLocaleString()}</td>
@@ -345,38 +332,37 @@ async function approveOrder(orderId, gemsReward, playerId) {
   if (!confirmApprove) return;
 
   try {
-    // 1. Mark order as paid in DB (Excluding paid_at which is missing from database schema to avoid 400 errors)
-    const { error: updOrderErr } = await supabase
-      .from('orders')
-      .update({ status: 'paid' }) // 100% correct, no paid_at column error
-      .eq('id', orderId);
-
-    if (updOrderErr) throw updOrderErr;
-
-    // 2. Best-effort update player's database column (ignores RLS errors)
-    try {
-      const { data: player, error: pErr } = await supabase
-        .from('players')
-        .select('gems')
-        .eq('id', playerId)
-        .single();
-
-      if (!pErr && player) {
-        const currentGems = player.gems || 0;
-        await supabase
-          .from('players')
-          .update({ gems: currentGems + gemsReward })
-          .eq('id', playerId);
-      }
-    } catch (dbErr) {
-      console.warn('RLS blocked admin from updating player row directly. Re-syncing client-side.');
-    }
-
+    await runAdminAction('approve-order', { orderId, playerId, gemsReward });
     showToast('⚡ Duyệt đơn thành công! Trạng thái đơn đã được cập nhật thành PAID.');
     await loadOverview();
-
   } catch (err) {
     console.error('Approve order error:', err);
     showToast(`❌ Duyệt đơn thất bại: ${err.message || err}`);
+  }
+}
+
+// ── Generic API Action Runner ───────────────────────────
+async function runAdminAction(action, payload) {
+  try {
+    const res = await fetch('/api/admin-action', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action,
+        passcode: 'admin123',
+        payload
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Yêu cầu xử lý thất bại');
+    }
+    return data;
+  } catch (err) {
+    console.error(`[Admin API] Action ${action} failed:`, err);
+    throw err;
   }
 }

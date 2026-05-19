@@ -272,6 +272,9 @@ function startOrderListener(orderId, gemsReward) {
            P.gems = (P.gems || 0) + gemsReward;
            savePlayer();
            updateGlobalHeader();
+           
+           // Mark order as completed to prevent duplicate crediting
+           supabase.from('orders').update({ status: 'completed' }).eq('id', orderId).then();
          }
       })
       .subscribe();
@@ -290,6 +293,9 @@ function startOrderListener(orderId, gemsReward) {
         P.gems = (P.gems || 0) + gemsReward;
         savePlayer();
         updateGlobalHeader();
+        
+        // Mark order as completed to prevent duplicate crediting
+        await supabase.from('orders').update({ status: 'completed' }).eq('id', orderId);
       }
     }, 3000);
   });

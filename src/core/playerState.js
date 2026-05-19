@@ -488,24 +488,40 @@ export async function checkPendingPaidOrders() {
     
     if (error || !paidOrders || paidOrders.length === 0) return;
 
-    if (!P.processedOrders) P.processedOrders = [];
     let addedGems = 0;
-    let hasNew = false;
+    const orderIds = [];
 
     paidOrders.forEach(order => {
-      const code = order.transaction_code || order.order_code;
-      if (!P.processedOrders.includes(code)) {
-        P.processedOrders.push(code);
-        addedGems += order.gems_reward || 0;
-        hasNew = true;
-      }
+      addedGems += order.gems_reward || 0;
+      orderIds.push(order.id);
     });
 
-    if (hasNew && addedGems > 0) {
+    if (addedGems > 0 && orderIds.length > 0) {
+      // 1. Credit locally
       P.gems = (P.gems || 0) + addedGems;
       await savePlayer();
-      updateGlobalHeader();
-      showToast(`💎 NẠP THÀNH CÔNG! Đã cộng ${addedGems} Gems vào tài khoản.`);
+      
+      // Update global header if visible
+      if (typeof updateGlobalHeader === 'function') {
+        updateGlobalHeader();
+      } else {
+        // Fallback search
+        const gemsEl = document.getElementById('header-gems') || document.querySelector('.acc-val[style*="var(--cyan)"]');
+        if (gemsEl) gemsEl.innerText = P.gems;
+      }
+      
+      const { toast: gameToast } = await import('../features/Shop.js').catch(() => ({}));
+      if (gameToast) {
+        gameToast(`💎 NẠP THÀNH CÔNG! Đã cộng ${addedGems} Gems vào tài khoản.`);
+      } else {
+        alert(`💎 NẠP THÀNH CÔNG! Đã cộng ${addedGems} Gems vào tài khoản.`);
+      }
+
+      // 2. Mark orders as completed in the database to prevent duplicate processing
+      await supabase
+        .from('orders')
+        .update({ status: 'completed' })
+        .in('id', orderIds);
     }
   } catch (err) {
     console.warn('Error checking pending paid orders:', err);
