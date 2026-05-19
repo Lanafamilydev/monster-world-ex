@@ -169,7 +169,8 @@ export async function buyPremium(amountVND, gemsReward) {
       amount: amountVND,
       gems_reward: gemsReward,
       transaction_code: transCode,
-      order_code: transCode
+      order_code: transCode,
+      package_id: `gems_${gemsReward}`
     })
     .select()
     .single();
