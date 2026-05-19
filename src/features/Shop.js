@@ -136,3 +136,83 @@ export function openRuneGacha() {
   });
 }
 
+// ── V6.1: Premium Shop (SePay) ────────────────────────────────
+let orderSubscription = null;
+
+export async function buyPremium(amountVND, gemsReward) {
+  if (!P.id) {
+    toast('⚠ Bạn cần tạo tài khoản (Đăng nhập Email) để nạp thẻ!');
+    document.getElementById('auth-modal')?.classList.add('show');
+    return;
+  }
+
+  // Generate unique transaction code
+  const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  const transCode = `MW${P.id.substring(0,4).toUpperCase()}${randomSuffix}`;
+
+  const { supabase } = await import('../core/supabaseClient.js');
+
+  // Insert pending order into database
+  const { data, error } = await supabase
+    .from('orders')
+    .insert({
+      player_id: P.id,
+      amount: amountVND,
+      gems_reward: gemsReward,
+      transaction_code: transCode
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Lỗi tạo đơn hàng:', error);
+    toast('⚠ Không thể tạo đơn hàng, vui lòng thử lại sau.');
+    return;
+  }
+
+  // Show Payment Modal
+  const modal = document.getElementById('payment-overlay');
+  if (!modal) return;
+  
+  document.getElementById('vietqr-amount').innerText = amountVND.toLocaleString();
+  document.getElementById('vietqr-desc').innerText = transCode;
+  
+  // Construct VietQR URL
+  const bank = 'Vietcombank';
+  const acc = '0271000845142';
+  const qrUrl = `https://qr.sepay.vn/img?acc=${acc}&bank=${bank}&amount=${amountVND}&des=${transCode}`;
+  document.getElementById('vietqr-img').src = qrUrl;
+  
+  modal.classList.add('show');
+  
+  // Start polling/listening to this order
+  startOrderListener(data.id, gemsReward);
+}
+
+function startOrderListener(orderId, gemsReward) {
+  import('../core/supabaseClient.js').then(({ supabase }) => {
+    orderSubscription = supabase
+      .channel(`order_${orderId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, (payload) => {
+         if (payload.new.status === 'paid') {
+           toast(`💎 NẠP THÀNH CÔNG! Bạn nhận được ${gemsReward} Gems!`);
+           closePaymentModal();
+           P.gems = (P.gems || 0) + gemsReward;
+           savePlayer();
+           updateGlobalHeader();
+         }
+      })
+      .subscribe();
+  });
+}
+
+export function closePaymentModal() {
+  document.getElementById('payment-overlay')?.classList.remove('show');
+  if (orderSubscription) {
+    import('../core/supabaseClient.js').then(({ supabase }) => {
+      supabase.removeChannel(orderSubscription);
+      orderSubscription = null;
+    });
+  }
+}
+

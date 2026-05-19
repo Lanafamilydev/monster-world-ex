@@ -1,6 +1,6 @@
 import { P, loadPlayer, initFreshPlayer, updateGlobalHeader, exportSave, importSave } from './core/playerState.js';
 import { switchTab, renderAccountTab, renderInventoryDisplay } from './ui/Tabs.js';
-import { renderItemShop, openGacha, closeGachaResult } from './features/Shop.js';
+import { renderItemShop, openGacha, closeGachaResult, buyPremium, closePaymentModal } from './features/Shop.js';
 import { renderRosterTab, renderPokedex } from './features/Roster.js';
 import { showEvoModal, closeEvoModal, showEvoModalForRoster } from './features/Evolution.js';
 import { showModeSelect, hideModeSelect, startSession, dismissEndlessReward } from './systems/SessionManager.js';
@@ -16,6 +16,8 @@ window.PVPArena             = PVPArena;
 window.switchTab            = switchTab;
 window.openGacha            = openGacha;
 window.closeGachaResult     = closeGachaResult;
+window.buyPremium           = buyPremium;
+window.closePaymentModal    = closePaymentModal;
 window.showEvoModal         = showEvoModal;
 window.closeEvoModal           = closeEvoModal;
 window.showEvoModalForRoster   = showEvoModalForRoster;

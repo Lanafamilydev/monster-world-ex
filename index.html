@@ -159,6 +159,32 @@
   <div id="tab-shop-inner">
     <div class="shop-title">🏪 CỬA HÀNG</div>
     <div class="shop-section">
+      <h3>💎 PREMIUM — NẠP GEMS (SEPAY)</h3>
+      <div class="shop-grid">
+        <div class="gacha-card gc-premium" onclick="buyPremium(2000, 200)">
+          <div class="gacha-card-icon" style="filter: hue-rotate(180deg);">💎</div>
+          <div class="gacha-card-name">Gói Tập Sự</div>
+          <div class="gacha-card-cost" style="color: #00ff88">💵 2,000 VNĐ</div>
+          <div class="gacha-card-desc">Chỉ để test SePay</div>
+          <div class="gacha-card-rates">Nhận ngay 200 Gems</div>
+        </div>
+        <div class="gacha-card gc-premium" onclick="buyPremium(10000, 1100)">
+          <div class="gacha-card-icon" style="filter: hue-rotate(250deg);">👑</div>
+          <div class="gacha-card-name">Gói Tiêu Chuẩn</div>
+          <div class="gacha-card-cost" style="color: #00ff88">💵 10,000 VNĐ</div>
+          <div class="gacha-card-desc">Khuyến mãi +10%</div>
+          <div class="gacha-card-rates">Nhận ngay 1100 Gems</div>
+        </div>
+        <div class="gacha-card gc-premium" onclick="buyPremium(20000, 2500)">
+          <div class="gacha-card-icon" style="filter: hue-rotate(300deg);">🏆</div>
+          <div class="gacha-card-name">Gói Vua Chơi</div>
+          <div class="gacha-card-cost" style="color: #00ff88">💵 20,000 VNĐ</div>
+          <div class="gacha-card-desc">Khuyến mãi +25%</div>
+          <div class="gacha-card-rates">Nhận ngay 2500 Gems</div>
+        </div>
+      </div>
+    </div>
+    <div class="shop-section">
       <h3>🎴 GACHA — MỞ GÓI QUÁI THÚ</h3>
       <div class="shop-grid">
         <div class="gacha-card gc-common" onclick="openGacha('common')">
@@ -584,6 +610,28 @@
       <p>• <b>Hút Máu:</b> Hồi HP dựa trên lượng sát thương gây ra.</p>
       <p>• <b>Tốc Độ:</b> Tăng phạm vi di chuyển trên bản đồ.</p>
     </div>
+  </div>
+</div>
+
+<!-- PAYMENT OVERLAY (SePay) -->
+<div class="overlay" id="payment-overlay">
+  <div class="acc-modal" style="width: 320px; text-align: center; background: #0a0a20; border: 2px solid var(--ulti);">
+    <h2 style="color: var(--ulti); margin-bottom: 15px; font-family: 'Cinzel Decorative', serif;">THANH TOÁN TỰ ĐỘNG</h2>
+    <p style="font-size: 13px; color: #aaa; margin-bottom: 10px;">Mở ứng dụng Ngân hàng để quét mã VietQR</p>
+    <div style="background: white; padding: 10px; border-radius: 8px; display: inline-block; margin-bottom: 15px;">
+      <img id="vietqr-img" src="" alt="VietQR" style="width: 250px; height: 250px;" />
+    </div>
+    <div style="font-family: 'Orbitron', sans-serif; font-size: 14px; margin-bottom: 10px; color: #00ff88;">
+      SỐ TIỀN: <span id="vietqr-amount">0</span> VNĐ
+    </div>
+    <div style="font-family: 'Orbitron', sans-serif; font-size: 12px; margin-bottom: 20px; color: var(--gold);">
+      Nội dung CK: <span id="vietqr-desc" style="user-select: all; font-weight: bold; background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; display:inline-block;">...</span>
+    </div>
+    <div style="font-size: 10px; color: #888; margin-bottom: 15px;">
+      <div class="loader" style="width: 14px; height: 14px; display: inline-block; border-width: 2px; vertical-align: middle; margin-right: 5px;"></div>
+      Hệ thống đang chờ giao dịch... Nhận ngọc sau 5-10s!
+    </div>
+    <button class="pb pb-cancel" onclick="closePaymentModal()">HỦY GIAO DỊCH</button>
   </div>
 </div>
 
