@@ -43,8 +43,8 @@ export class FusionSystem {
     const p1 = getMonsterBase(p1Id);
     const p2 = getMonsterBase(p2Id);
     
-    const lv1 = P.monsterLevels[p1Id] || 1;
-    const lv2 = P.monsterLevels[p2Id] || 1;
+    const lv1 = P.monsterLevels[p1Id]?.lv || 1;
+    const lv2 = P.monsterLevels[p2Id]?.lv || 1;
 
     // Check requirements
     if (idx1 === idx2) {
@@ -93,8 +93,8 @@ export class FusionSystem {
     if (!P.collection.includes(newId)) P.collection.push(newId);
     
     // Inherit stats bonus + Hybrid Trait
-    const inheritedLv = Math.floor((lv1 + lv2) / 4);
-    P.monsterLevels[newId] = Math.max(1, inheritedLv);
+    const inheritedLv = Math.floor(((lv1 || 1) + (lv2 || 1)) / 4);
+    P.monsterLevels[newId] = { lv: Math.max(1, inheritedLv), xp: 0, evolved: false, evoPathId: null };
     
     // V6.0: Mark as hybrid for special bonus
     if (!P.traits) P.traits = {};

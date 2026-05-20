@@ -237,7 +237,7 @@ export const PVPArena = {
     G.grid = Array.from({ length: G.rows }, () => Array(G.cols).fill(null));
 
     // Helper to spawn a unit into G.units
-    const spawnUnit = (id, base, isPlayer1, spawnPos) => {
+    const spawnUnit = (id, monsterId, base, isPlayer1, spawnPos) => {
       let r = spawnPos[0], c = spawnPos[1];
       if (G.activeMap[r] && (G.activeMap[r][c] === 'water' || G.activeMap[r][c] === 'mountain')) {
         G.activeMap[r][c] = 'plains';
@@ -252,14 +252,33 @@ export const PVPArena = {
         o: isPlayer1 ? 'player' : 'enemy' // Player 1 is 'player', Player 2 is 'enemy'
       };
 
-      // Recalculate stats for local units if P has them
-      if (id && P.monsterLevels?.[id] && ((role === 'player1' && isPlayer1) || (role === 'player2' && !isPlayer1))) {
-        const ml = P.monsterLevels[id];
-        if (ml.lv > base.lv) {
-          const gainLvs = ml.lv - base.lv;
+      // Apply persistent level for local player's units using correct monsterId key
+      const isMyUnit = (role === 'player1' && isPlayer1) || (role === 'player2' && !isPlayer1);
+      if (isMyUnit && monsterId && P.monsterLevels?.[monsterId]) {
+        const ml = P.monsterLevels[monsterId];
+        const mlLv = ml?.lv || 1;
+        if (mlLv > base.lv) {
+          const gainLvs = mlLv - base.lv;
           u.hp += gainLvs * 3; u.atk += gainLvs; u.def += gainLvs;
-          u.lv = ml.lv; u.xp = ml.xp || 0;
+          u.lv = mlLv; u.xp = ml.xp || 0;
           u.curHp = u.hp; u.curMp = u.mp;
+        } else if (mlLv) {
+          u.lv = mlLv;
+          u.xp = ml.xp || 0;
+        }
+        // Apply evolution state from saved data
+        if (ml?.evolved && ml?.evoPathId) {
+          const paths = EVOLUTIONS[monsterId];
+          const path = paths?.find(p => p.pathId === ml.evoPathId);
+          if (path) {
+            u.n = path.n; u.e = path.e; u.elem = path.elem || u.elem;
+            u.hp += path.hp; u.curHp = u.hp;
+            u.atk += path.atk; u.def += path.def;
+            u.mp += (path.mp || 0); u.curMp = u.mp;
+            if (path.spd) u.spd = Math.max(1, u.spd + path.spd);
+            if (path.newSkill && !u.sk.includes(path.newSkill)) u.sk.push(path.newSkill);
+            u.evolved = true; u.evoPathId = ml.evoPathId;
+          }
         }
       }
 
@@ -270,13 +289,13 @@ export const PVPArena = {
     // 3. Spawn Player 1 (Host) units at bottom rows as 'player'
     p1Roster.slice(0, playerPositions.length).forEach((monsterId, idx) => {
       const base = getMonsterBase(monsterId);
-      if (base) spawnUnit(`p1_${monsterId}_${idx}`, base, true, playerPositions[idx]);
+      if (base) spawnUnit(`p1_${monsterId}_${idx}`, monsterId, base, true, playerPositions[idx]);
     });
 
     // 4. Spawn Player 2 (Guest) units at top rows as 'enemy'
     p2Roster.slice(0, enemyPositions.length).forEach((monsterId, idx) => {
       const base = getMonsterBase(monsterId);
-      if (base) spawnUnit(`p2_${monsterId}_${idx}`, base, false, enemyPositions[idx]);
+      if (base) spawnUnit(`p2_${monsterId}_${idx}`, monsterId, base, false, enemyPositions[idx]);
     });
 
     // 5. Initial turn: Player 1 (player) goes first
@@ -330,6 +349,7 @@ export const PVPArena = {
   /** Receive and execute opponent's gameplay actions locally */
   receiveAction(action) {
     if (G.mode !== 'pvp') return;
+    if (G.gameOver) return; // Prevent double-win race condition
     console.log('⚡ [PvP] Received Opponent Action:', action);
 
     const { type, from, to, skillId } = action;
@@ -388,21 +408,22 @@ export const PVPArena = {
     } 
     
     else if (type === 'END_TURN') {
-      // Opponent completed turn -> Switch turn to active local player!
+      // Opponent completed turn → it's now MY turn
+      // Reset MY units so I can act this turn
+      const myAlliance = this.localRole === 'player1' ? 'player' : 'enemy';
+      Object.values(G.units).filter(u => u.o === myAlliance).forEach(u => {
+        u.moved = false; u.attacked = false; u.usedSkill = false;
+        u.status = u.status.filter(s => s.type !== 'speedup');
+      });
+
       if (G.turn === 'player') {
-        // Player 1 ends turn -> Player 2's turn starts
-        Object.values(G.units).filter(u => u.o === 'player').forEach(u => {
-          u.moved = false; u.attacked = false; u.usedSkill = false;
-        });
+        // Player 1 ended their turn → Player 2's turn starts
         G.turn = 'enemy';
         addLog('─── Kết thúc lượt Player 1 ───', 'ls');
         addLog('🟢 LƯỢT CỦA BẠN (Player 2)!', 'ls');
         toast('🟢 Đến lượt của bạn!');
       } else {
-        // Player 2 ends turn -> Player 1's turn starts
-        Object.values(G.units).filter(u => u.o === 'enemy').forEach(u => {
-          u.moved = false; u.attacked = false; u.usedSkill = false;
-        });
+        // Player 2 ended their turn → Player 1's turn starts
         G.turn = 'player';
         G.round++;
         addLog('─── Kết thúc lượt Player 2 ───', 'ls');

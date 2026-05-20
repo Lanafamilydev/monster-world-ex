@@ -126,21 +126,40 @@ export function onCell(r, c) {
   }
 
   // ── Attack ───────────────────────────────────────────────
-  if (G.sel && G.atkbl.some(([a, b]) => a === r && b === c)) {
+  // V6.1: Resolve multi-cell boss attacks — clicking any boss cell works
+  let atkR = r, atkC = c;
+  let isAtkblHit = G.sel && G.atkbl.some(([a, b]) => a === r && b === c);
+
+  // If clicked cell has a multi-cell enemy but isn't directly in atkbl,
+  // find an atkbl cell that belongs to this same enemy
+  if (!isAtkblHit && G.sel && uid && u && u.alive && u.o !== (G.mode === 'pvp' ? (window.PVPArena?.localRole === 'player1' ? 'player' : 'enemy') : 'player')) {
+    const bossSize = u.size || 1;
+    if (bossSize > 1) {
+      for (const [ar, ac] of G.atkbl) {
+        if (G.grid[ar]?.[ac] === uid) {
+          atkR = ar; atkC = ac;
+          isAtkblHit = true;
+          break;
+        }
+      }
+    }
+  }
+
+  if (isAtkblHit) {
     const [sr, sc] = G.sel;
     const aid   = G.grid[sr][sc];
     const atker = G.units[aid];
-    const did   = G.grid[r][c];
+    const did   = G.grid[atkR][atkC];
     const defer = G.units[did];
     if (atker && defer && !atker.attacked && defer.o !== atker.o) {
-      doAttack(atker, defer, r, c, false);
+      doAttack(atker, defer, atkR, atkC, false);
       atker.attacked = true;
 
       if (G.mode === 'pvp') {
         window.PVPArena?.broadcastAction({
           type: 'ATTACK',
           from: [sr, sc],
-          to: [r, c]
+          to: [atkR, atkC]
         });
       }
 

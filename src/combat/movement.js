@@ -84,11 +84,16 @@ export function getAdj(r, c, range = 1, size = 1) {
   return cells;
 }
 
-/** Get cells with attackable enemies adjacent to (r,c) */
+/** Get cells with attackable enemies adjacent to (r,c)
+ * V6.0: Also checks cells occupied by multi-cell boss units
+ */
 export function getAtkbl(r, c, own) {
-  return getAdj(r, c, 1).filter(([a, b]) => {
-    const uid = G.grid[a][b];
-    return uid && G.units[uid].alive && G.units[uid].o !== own;
+  // Lookup unit size at (r,c) so boss units check adj from all occupied cells
+  const uid = G.grid[r]?.[c];
+  const size = (uid && G.units[uid]) ? (G.units[uid].size || 1) : 1;
+  return getAdj(r, c, 1, size).filter(([a, b]) => {
+    const tid = G.grid[a]?.[b];
+    return tid && G.units[tid]?.alive && G.units[tid].o !== own;
   });
 }
 

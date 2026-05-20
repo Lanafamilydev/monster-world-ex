@@ -34,6 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.searchPlayers = searchPlayers;
   window.updatePlayerGems = updatePlayerGems;
   window.approveOrder = approveOrder;
+  window.saveGameConfig = saveGameConfig;
+  window.sendBroadcast = sendBroadcast;
 });
 
 // Admin Login
@@ -80,7 +82,10 @@ async function switchTab(tabName) {
     overview: 'Tổng Quan & Thống Kê',
     payment: 'Cấu Hình Ngân Hàng & Gói Gems',
     players: 'Quản Lý Người Chơi',
-    orders: 'Lịch Sử Giao Dịch'
+    orders: 'Lịch Sử Giao Dịch',
+    gameconfig: 'Cấu Hình Game',
+    broadcast: 'Thông Báo Toàn Server',
+    analytics: 'Phân Tích & Thống Kê'
   };
   document.getElementById('admin-current-title').innerText = titles[tabName] || 'Bảng Điều Khiển';
 
@@ -93,6 +98,8 @@ async function switchTab(tabName) {
   if (tabName === 'payment') await loadPaymentSettings();
   if (tabName === 'players') await searchPlayers();
   if (tabName === 'orders') await loadOrdersHistory();
+  if (tabName === 'gameconfig') await loadGameConfig();
+  if (tabName === 'analytics') await loadAnalytics();
 }
 
 // ── Tab 1: Overview & Active Pending Orders ──────────────────
@@ -328,5 +335,170 @@ async function runAdminAction(action, payload) {
   } catch (err) {
     console.error(`[Admin API] Action ${action} failed:`, err);
     throw err;
+  }
+}
+// ── Tab 5: Game Config ──────────────────────────────────────────────
+async function loadGameConfig() {
+  try {
+    const { data: dbConfig } = await supabase
+      .from('admin_settings')
+      .select('*');
+
+    const configs = {};
+    (dbConfig || []).forEach(row => {
+      configs[row.key] = row.value;
+    });
+
+    const gc = configs['game_config'] || {
+      gacha_common_rates: [60, 30, 9, 1],
+      gacha_premium_rates: [0, 30, 50, 20],
+      xp_per_kill: 10,
+      gold_per_kill: 20,
+      max_roster: 5
+    };
+
+    const el = document.getElementById('gc-content');
+    if (!el) return;
+
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+        <div>
+          <label style="font-size:11px;color:#666">GACHA THƯỜNG (C/B/A/S %)</label>
+          <input type="text" id="gc-gacha-common" class="admin-input" style="margin-top:5px" value="${gc.gacha_common_rates?.join(', ') || '60, 30, 9, 1'}">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#666">GACHA PREMIUM (C/B/A/S %)</label>
+          <input type="text" id="gc-gacha-premium" class="admin-input" style="margin-top:5px" value="${gc.gacha_premium_rates?.join(', ') || '0, 30, 50, 20'}">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px">
+        <div>
+          <label style="font-size:11px;color:#666">XP/KILL</label>
+          <input type="number" id="gc-xp-kill" class="admin-input" style="margin-top:5px" value="${gc.xp_per_kill || 10}">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#666">GOLD/KILL</label>
+          <input type="number" id="gc-gold-kill" class="admin-input" style="margin-top:5px" value="${gc.gold_per_kill || 20}">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#666">MAX ROSTER</label>
+          <input type="number" id="gc-max-roster" class="admin-input" style="margin-top:5px" value="${gc.max_roster || 5}">
+        </div>
+      </div>
+      <button class="pb pb-end" style="border:none;font-weight:bold;font-size:13px" onclick="saveGameConfig()">LƯU CẤU HÌNH GAME</button>
+    `;
+  } catch (err) {
+    console.error('Load game config error:', err);
+  }
+}
+
+async function saveGameConfig() {
+  const commonStr = document.getElementById('gc-gacha-common')?.value || '60,30,9,1';
+  const premStr = document.getElementById('gc-gacha-premium')?.value || '0,30,50,20';
+  const commonRates = commonStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+  const premRates = premStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+
+  const config = {
+    gacha_common_rates: commonRates.length === 4 ? commonRates : [60, 30, 9, 1],
+    gacha_premium_rates: premRates.length === 4 ? premRates : [0, 30, 50, 20],
+    xp_per_kill: parseInt(document.getElementById('gc-xp-kill')?.value) || 10,
+    gold_per_kill: parseInt(document.getElementById('gc-gold-kill')?.value) || 20,
+    max_roster: parseInt(document.getElementById('gc-max-roster')?.value) || 5
+  };
+
+  try {
+    await runAdminAction('save-settings', { key: 'game_config', value: config });
+    showToast('✅ Đã lưu cấu hình game!');
+  } catch (err) {
+    showToast(`❌ Lỗi: ${err.message || err}`);
+  }
+}
+
+// ── Tab 6: Broadcast ───────────────────────────────────────────────
+async function sendBroadcast() {
+  const msg = document.getElementById('bc-message')?.value.trim();
+  const type = document.getElementById('bc-type')?.value || 'info';
+  if (!msg) { showToast('❌ Nhập nội dung thông báo!'); return; }
+
+  try {
+    const channel = supabase.channel('game_broadcasts');
+    await channel.subscribe();
+    await channel.send({
+      type: 'broadcast',
+      event: 'admin_broadcast',
+      payload: { message: msg, type, timestamp: Date.now() }
+    });
+    channel.unsubscribe();
+
+    // Also save to DB for history
+    await supabase.from('admin_settings').upsert({
+      key: 'last_broadcast',
+      value: { message: msg, type, timestamp: new Date().toISOString() }
+    });
+
+    document.getElementById('bc-message').value = '';
+    showToast('📢 Thông báo đã được gửi thành công!');
+  } catch (err) {
+    showToast(`❌ Lỗi: ${err.message || err}`);
+  }
+}
+
+// ── Tab 7: Analytics ───────────────────────────────────────────────
+async function loadAnalytics() {
+  const el = document.getElementById('analytics-content');
+  if (!el) return;
+
+  try {
+    const data = await runAdminAction('get-overview');
+
+    const { data: players } = await supabase
+      .from('players')
+      .select('wins, losses, battles, gold, gems, arena_rating, campaign_floor')
+      .limit(100);
+
+    const totalPlayers = data.totalPlayers || 0;
+    const totalBattles = (players || []).reduce((s, p) => s + (p.battles || 0), 0);
+    const avgRating = Math.round((players || []).reduce((s, p) => s + (p.arena_rating || 1000), 0) / Math.max(1, totalPlayers));
+    const topFloor = Math.max(1, ...(players || []).map(p => p.campaign_floor || 1));
+    const totalGold = (players || []).reduce((s, p) => s + (p.gold || 0), 0);
+    const totalGems = (players || []).reduce((s, p) => s + (p.gems || 0), 0);
+
+    // Simple bar chart using CSS
+    const ratingBuckets = { '<900':0, '900-999':0, '1000-1099':0, '1100-1199':0, '1200+':0 };
+    (players || []).forEach(p => {
+      const r = p.arena_rating || 1000;
+      if (r < 900) ratingBuckets['<900']++;
+      else if (r < 1000) ratingBuckets['900-999']++;
+      else if (r < 1100) ratingBuckets['1000-1099']++;
+      else if (r < 1200) ratingBuckets['1100-1199']++;
+      else ratingBuckets['1200+']++;
+    });
+    const maxBucket = Math.max(1, ...Object.values(ratingBuckets));
+
+    el.innerHTML = `
+      <div class="admin-stats-grid" style="margin-bottom:30px">
+        <div class="admin-stat-card"><div style="font-size:11px;color:#666;margin-bottom:5px">⚔ TỔNG TRẬN ĐẤU</div><div style="font-size:28px;font-weight:bold;color:var(--cyan)">${totalBattles}</div></div>
+        <div class="admin-stat-card"><div style="font-size:11px;color:#666;margin-bottom:5px">🏆 RATING TB</div><div style="font-size:28px;font-weight:bold;color:var(--gold)">${avgRating}</div></div>
+        <div class="admin-stat-card"><div style="font-size:11px;color:#666;margin-bottom:5px">📖 CAMPAIGN MAX</div><div style="font-size:28px;font-weight:bold;color:#00ff88">${topFloor}</div></div>
+        <div class="admin-stat-card"><div style="font-size:11px;color:#666;margin-bottom:5px">💰 TỔNG VÀNG</div><div style="font-size:28px;font-weight:bold;color:var(--gold)">${totalGold.toLocaleString()}</div></div>
+        <div class="admin-stat-card"><div style="font-size:11px;color:#666;margin-bottom:5px">💎 TỔNG GEMS</div><div style="font-size:28px;font-weight:bold;color:var(--cyan)">${totalGems.toLocaleString()}</div></div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-title"><span>📊</span> Phân Bố Rating Người Chơi</div>
+        <div style="display:flex;align-items:flex-end;gap:12px;height:120px;padding:10px 0">
+          ${Object.entries(ratingBuckets).map(([label, count]) => `
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+              <div style="font-size:11px;color:var(--cyan);font-weight:bold">${count}</div>
+              <div style="width:100%;background:linear-gradient(to top, var(--cyan), rgba(0,229,255,0.3));border-radius:4px 4px 0 0;height:${Math.max(4, (count/maxBucket)*100)}px;transition:height 0.5s"></div>
+              <div style="font-size:9px;color:#666;white-space:nowrap">${label}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    console.error('Analytics error:', err);
+    el.innerHTML = '<div style="color:var(--red);padding:20px">❌ Không thể tải analytics</div>';
   }
 }

@@ -276,8 +276,8 @@ function _updateFusionSlotsUI() {
     const m1 = _fSlots[0] !== null ? getMonsterBase(P.roster[_fSlots[0]]) : null;
     const m2 = _fSlots[1] !== null ? getMonsterBase(P.roster[_fSlots[1]]) : null;
 
-    s1.innerHTML = m1 ? `<div class="fusion-monster"><span>${m1.e}</span><div class="f-lv">LV${P.monsterLevels[m1.id]||1}</div></div>` : '<div class="slot-placeholder">?</div>';
-    s2.innerHTML = m2 ? `<div class="fusion-monster"><span>${m2.e}</span><div class="f-lv">LV${P.monsterLevels[m2.id]||1}</div></div>` : '<div class="slot-placeholder">?</div>';
+    s1.innerHTML = m1 ? `<div class="fusion-monster"><span>${m1.e}</span><div class="f-lv">LV${P.monsterLevels[m1.id]?.lv||1}</div></div>` : '<div class="slot-placeholder">?</div>';
+    s2.innerHTML = m2 ? `<div class="fusion-monster"><span>${m2.e}</span><div class="f-lv">LV${P.monsterLevels[m2.id]?.lv||1}</div></div>` : '<div class="slot-placeholder">?</div>';
 
     if (m1 && m2) {
       import('../features/Fusion.js').then(({ FusionSystem }) => {
@@ -322,7 +322,7 @@ window.openFusionPicker = function(slotNum) {
     
     P.roster.forEach((id, idx) => {
       const m = getMonsterBase(id);
-      const lv = P.monsterLevels[id] || 1;
+      const lv = P.monsterLevels[id]?.lv || 1;
       const isSelected = _fSlots.includes(idx);
       const canFuse = lv >= 10;
       

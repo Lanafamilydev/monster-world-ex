@@ -62,7 +62,13 @@ export function openGacha(type) {
   if (P.talents?.greedy_merchant) cost = Math.floor(cost * 0.9);
   if (P.gold < cost) { toast(`Không đủ Vàng! Cần ${cost}💰`); return; }
 
-  const rates  = GACHA_RATES[type];
+  const rates  = [...GACHA_RATES[type]];
+  // V6.1: Lucky Star talent shifts rates toward rarer tiers
+  if (P.talents?.lucky_star && rates[0] > 5) {
+    rates[0] -= 5; // -5% common
+    rates[2] += 3; // +3% A-rank
+    rates[3] += 2; // +2% S-rank
+  }
   const tiers  = ['C', 'B', 'A', 'S'];
   const roll   = Math.random() * 100;
   let cum = 0, pickedTier = 'C';

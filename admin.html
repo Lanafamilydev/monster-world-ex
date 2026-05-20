@@ -252,6 +252,15 @@
       <div class="admin-nav-item" id="nav-orders" onclick="switchTab('orders')">
         <span>📜</span> Đơn Hàng
       </div>
+      <div class="admin-nav-item" id="nav-gameconfig" onclick="switchTab('gameconfig')">
+        <span>⚙️</span> Cấu Hình Game
+      </div>
+      <div class="admin-nav-item" id="nav-broadcast" onclick="switchTab('broadcast')">
+        <span>📢</span> Thông Báo
+      </div>
+      <div class="admin-nav-item" id="nav-analytics" onclick="switchTab('analytics')">
+        <span>📊</span> Analytics
+      </div>
       
       <div style="flex: 1;"></div>
       
@@ -416,6 +425,44 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: GAME CONFIG -->
+      <div class="admin-tab-pane" id="tab-gameconfig" style="display: none;">
+        <div class="admin-card">
+          <div class="admin-card-title"><span>⚙️</span> Cấu Hình Gameplay</div>
+          <div id="gc-content">
+            <div style="text-align:center;padding:20px;color:#555">Đang tải cấu hình...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 6: BROADCAST -->
+      <div class="admin-tab-pane" id="tab-broadcast" style="display: none;">
+        <div class="admin-card">
+          <div class="admin-card-title"><span>📢</span> Gửi Thông Báo Toàn Server</div>
+          <div style="margin-bottom:15px">
+            <label style="font-size:11px;color:#666">LOẠI THÔNG BÁO</label>
+            <select id="bc-type" class="admin-input" style="margin-top:5px">
+              <option value="info">ℹ️ Thông tin</option>
+              <option value="warning">⚠️ Cảnh báo</option>
+              <option value="event">🎉 Sự kiện</option>
+              <option value="maintenance">🛠️ Bảo trì</option>
+            </select>
+          </div>
+          <div style="margin-bottom:15px">
+            <label style="font-size:11px;color:#666">NỘI DUNG THÔNG BÁO</label>
+            <textarea id="bc-message" class="admin-input" rows="4" style="margin-top:5px;resize:vertical" placeholder="Nhập nội dung thông báo..."></textarea>
+          </div>
+          <button class="pb pb-end" style="border:none;font-weight:bold;font-size:13px" onclick="sendBroadcast()">📢 GỬi Thông Báo</button>
+        </div>
+      </div>
+
+      <!-- TAB 7: ANALYTICS -->
+      <div class="admin-tab-pane" id="tab-analytics" style="display: none;">
+        <div id="analytics-content">
+          <div style="text-align:center;padding:40px;color:#555">Đang tải dữ liệu phân tích...</div>
         </div>
       </div>
 

@@ -294,7 +294,15 @@ export const RUNE_RARITY = {
 export const TALENTS = {
   nature_blessing: { n: "Nature's Blessing", desc: '+5% HP cho hệ Cỏ (Wood)', cost: 5, icon: '🌿' },
   greedy_merchant: { n: "Greedy Merchant",  desc: '-10% Giá vàng tại Shop',   cost: 10, icon: '💰' },
-  tactician:       { n: "Tactician",        desc: '+5% Tỷ lệ chí mạng toàn đội', cost: 15, icon: '♟️' }
+  tactician:       { n: "Tactician",        desc: '+5% Tỷ lệ chí mạng toàn đội', cost: 15, icon: '♟️' },
+  iron_will:       { n: "Iron Will",        desc: '+5% DEF toàn đội',         cost: 8,  icon: '🛡️' },
+  war_fury:        { n: "War Fury",         desc: '+5% ATK toàn đội',         cost: 8,  icon: '⚔️' },
+  vitality:        { n: "Vitality",         desc: '+8% HP toàn đội',          cost: 12, icon: '❤️' },
+  fatigue_resist:  { n: "Fatigue Resist",   desc: '-30% mệt mỏi sau trận',   cost: 10, icon: '💪' },
+  xp_boost:        { n: "XP Boost",         desc: '+25% XP nhận được',        cost: 15, icon: '📈' },
+  lucky_star:      { n: "Lucky Star",       desc: '+5% tỷ lệ gacha hiếm',    cost: 20, icon: '🍀' },
+  phoenix_soul:    { n: "Phoenix Soul",     desc: 'Hồi sinh 1 lần/trận (30% HP)', cost: 25, icon: '🔥' },
+  gold_rush:       { n: "Gold Rush",        desc: '+20% vàng thưởng sau trận',cost: 12, icon: '🪙' },
 };
 
 // ── Default player data ──

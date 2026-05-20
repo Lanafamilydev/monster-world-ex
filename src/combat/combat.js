@@ -294,7 +294,12 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
     }
   }
 
-  if (atker.o === 'player') { atker.xp = (atker.xp || 0) + 10; checkLevelUp(atker); }
+  if (atker.o === 'player') {
+    let xpGain = 10;
+    if (P.talents?.xp_boost) xpGain = Math.floor(xpGain * 1.25);
+    atker.xp = (atker.xp || 0) + xpGain;
+    checkLevelUp(atker);
+  }
 
   // Drain
   if (isSk && atker.sk?.includes('drain')) {
@@ -349,21 +354,29 @@ export function doAttack(atker, defer, tr, tc, isSk = false, overDmg = null, ski
   }
 
   if (defer.curHp <= 0) {
-    defer.curHp = 0; defer.alive = false;
-    if (pos) {
-      const size = defer.size || 1;
-      for (let dr = 0; dr < size; dr++) {
-        for (let dc = 0; dc < size; dc++) {
-          if (G.grid[pos[0] + dr]?.[pos[1] + dc] === defer.id) {
-            G.grid[pos[0] + dr][pos[1] + dc] = null;
+    // V6.1: Phoenix Soul talent — revive once per battle at 30% HP
+    if (defer.o === 'player' && P.talents?.phoenix_soul && !defer._phoenixUsed) {
+      defer._phoenixUsed = true;
+      defer.curHp = Math.max(1, Math.floor(defer.hp * 0.3));
+      addLog(`🔥 PHƯỢNG HOÀNG HỒI SINH! ${defer.e} ${defer.n} sống lại với ${defer.curHp}HP!`, 'lev');
+      if (pos) floatTxt(pos[0], pos[1], '🔥REVIVE!', 'heal', '#ff8800');
+    } else {
+      defer.curHp = 0; defer.alive = false;
+      if (pos) {
+        const size = defer.size || 1;
+        for (let dr = 0; dr < size; dr++) {
+          for (let dc = 0; dc < size; dc++) {
+            if (G.grid[pos[0] + dr]?.[pos[1] + dc] === defer.id) {
+              G.grid[pos[0] + dr][pos[1] + dc] = null;
+            }
           }
         }
       }
+      addLog(`💥 ${defer.e} ${defer.n} bị tiêu diệt!`, 'ld');
+      G.score += defer.lv * 100 * Math.min(G.combo, G.comboMax);
+      if (defer.o === 'enemy') G.killed.p++; else G.killed.e++;
+      checkGameOver();
     }
-    addLog(`💥 ${defer.e} ${defer.n} bị tiêu diệt!`, 'ld');
-    G.score += defer.lv * 100 * Math.min(G.combo, G.comboMax);
-    if (defer.o === 'enemy') G.killed.p++; else G.killed.e++;
-    checkGameOver();
   }
   return dmg;
 }
@@ -534,10 +547,11 @@ function _gameOver(winner) {
 
   Object.values(G.units).filter(u => u.o === 'player').forEach(u => {
     persistMonsterLevel(u);
-    P.fatigue[u.id] = Math.min(100, (P.fatigue[u.id] || 0) + 15);
+    P.fatigue[u.id] = Math.min(100, (P.fatigue[u.id] || 0) + (P.talents?.fatigue_resist ? 10 : 15));
   });
 
-  const goldEarned = G.killed.p * 20 + G.pCap * 50 + (winner === 'player' ? 100 : 20);
+  let goldEarned = G.killed.p * 20 + G.pCap * 50 + (winner === 'player' ? 100 : 20);
+  if (P.talents?.gold_rush) goldEarned = Math.floor(goldEarned * 1.2);
   P.gold       += goldEarned;
   P.totalScore += G.score;
   P.battles++;

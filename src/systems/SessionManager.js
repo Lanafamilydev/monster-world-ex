@@ -248,6 +248,19 @@ export function initBattle() {
     if (P.talents?.tactician) {
       u.crit = (u.crit || 0) + 5;
     }
+    if (P.talents?.iron_will) {
+      u.def = Math.ceil(u.def * 1.05);
+    }
+    if (P.talents?.war_fury) {
+      u.atk = Math.ceil(u.atk * 1.05);
+    }
+    if (P.talents?.vitality) {
+      u.hp = Math.ceil(u.hp * 1.08);
+      u.curHp = u.hp;
+    }
+    if (P.talents?.phoenix_soul) {
+      u._phoenixUsed = false; // Track one-time revive per battle
+    }
 
     G.units[id] = u;
     G.grid[pr][pc] = id;
